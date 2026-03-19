@@ -1,8 +1,10 @@
 {
-  "apiKey": "AIzaSyDG3wif44znrdMcXIIGpVMW_zQgUQqihMw",
-  "authDomain": "portfolio-1b468.firebaseapp.com",
-  "projectId": "portfolio-1b468",
-  "storageBucket": "portfolio-1b468.firebasestorage.app",
-  "messagingSenderId": "98373450031",
-  "appId": "1:98373450031:web:14cc3db7dcff58f2b989da"
+  "projectId": "ratul-code-studio-d64c1",
+  "appId": "1:768282230755:web:40631124ff06724cc1ead6",
+  "apiKey": "AIzaSyDG_y-wnfd4fDoXnhf6A_ql-_GVu6ghOMM",
+  "authDomain": "ratul-code-studio-d64c1.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-2846e15b-d33e-4309-8b75-ba278732ded0",
+  "storageBucket": "ratul-code-studio-d64c1.firebasestorage.app",
+  "messagingSenderId": "768282230755",
+  "measurementId": ""
 }

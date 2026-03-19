@@ -8,16 +8,19 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-        (request.auth.token.email == "shahriarislam275@gmail.com" && request.auth.token.email_verified == true);
+        (request.auth.token.email == "shahriarislam275@gmail.com" || 
+         request.auth.uid == "GidKcH7u9VbMEEXhU245isWbWtu2");
     }
 
     function isValidProject(data) {
       return data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
              data.description is string && data.description.size() > 0 && data.description.size() < 1000 &&
              data.imageUrl is string && data.imageUrl.size() > 0 &&
-             (!('techStack' in data) || data.techStack is string) &&
-             (!('demoUrl' in data) || data.demoUrl is string) &&
-             (!('githubUrl' in data) || data.githubUrl is string);
+             data.techStack is string &&
+             data.demoUrl is string &&
+             data.githubUrl is string &&
+             (data.createdAt is timestamp || !('createdAt' in data)) &&
+             (data.updatedAt is timestamp || !('updatedAt' in data));
     }
 
     match /projects/{projectId} {

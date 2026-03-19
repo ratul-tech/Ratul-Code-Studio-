@@ -1,4 +1,5 @@
-import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import * as React from 'react';
+import { useState, useEffect, ReactNode, Component, ErrorInfo } from 'react';
 import { 
   collection, 
   onSnapshot, 
@@ -12,8 +13,7 @@ import {
   getDocFromServer
 } from 'firebase/firestore';
 import { 
-  signInWithPopup, 
-  GoogleAuthProvider, 
+  signInWithEmailAndPassword,
   signOut, 
   onAuthStateChanged,
   User
@@ -103,9 +103,12 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public props: ErrorBoundaryProps;
+  public state: ErrorBoundaryState = { hasError: false, error: null };
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.props = props;
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -123,17 +126,24 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       let isAuthConfigError = false;
 
       try {
-        const parsed = JSON.parse(this.state.error?.message || '{}');
+        const errorMsg = this.state.error?.message || "";
+        const parsed = JSON.parse(errorMsg);
         if (parsed.error?.includes('permission-denied')) {
           isPermissionError = true;
           errorMessage = "Firestore Permission Denied. Please ensure you have applied the security rules in your Firebase Console.";
+        } else if (parsed.error) {
+          errorMessage = parsed.error;
         }
       } catch {
-        if (this.state.error?.message?.includes('auth/configuration-not-found')) {
+        const msg = this.state.error?.message || "";
+        if (msg.includes('auth/configuration-not-found')) {
           isAuthConfigError = true;
-          errorMessage = "Firebase Auth Configuration Not Found. Please enable the Google Sign-In provider in your Firebase Console.";
+          errorMessage = "Firebase Auth Configuration Not Found. Please enable the Email/Password provider in your Firebase Console.";
+        } else if (msg.includes('permission-denied')) {
+          isPermissionError = true;
+          errorMessage = "Firestore Permission Denied. Please ensure you have applied the security rules in your Firebase Console.";
         } else {
-          errorMessage = this.state.error?.message || errorMessage;
+          errorMessage = msg || errorMessage;
         }
       }
 
@@ -167,7 +177,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                   <li>Go to Firebase Console</li>
                   <li>Authentication &gt; Sign-in method</li>
                   <li>Click "Add new provider"</li>
-                  <li>Select "Google" and enable it</li>
+                  <li>Select "Email/Password" and enable it</li>
                 </ol>
               </div>
             )}
@@ -195,6 +205,7 @@ function PortfolioApp() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -207,6 +218,11 @@ function PortfolioApp() {
     techStack: '',
     demoUrl: '',
     githubUrl: ''
+  });
+
+  const [loginData, setLoginData] = useState({
+    email: '',
+    password: ''
   });
 
   const ADMIN_EMAIL = "shahriarislam275@gmail.com";
@@ -247,16 +263,23 @@ function PortfolioApp() {
     };
   }, []);
 
-  const handleLogin = async () => {
-    const provider = new GoogleAuthProvider();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      await signInWithPopup(auth, provider);
+      await signInWithEmailAndPassword(auth, loginData.email, loginData.password);
+      setIsLoginModalOpen(false);
+      setLoginData({ email: '', password: '' });
+      setError(null);
     } catch (err: any) {
       console.error("Login failed", err);
       if (err.code === 'auth/configuration-not-found') {
         throw new Error('auth/configuration-not-found');
       }
-      setError(err.message);
+      if (err.code === 'auth/invalid-credential') {
+        setError("Invalid email or password.");
+      } else {
+        setError(err.message);
+      }
     }
   };
 
@@ -360,11 +383,9 @@ function PortfolioApp() {
             
             {user ? (
               <div className="flex items-center gap-3">
-                <img 
-                  src={user.photoURL || ''} 
-                  alt={user.displayName || ''} 
-                  className="w-9 h-9 rounded-full border border-white/10"
-                />
+                <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold border border-emerald-500/20">
+                  {user.email?.[0].toUpperCase()}
+                </div>
                 <button 
                   onClick={handleLogout}
                   className="p-2 hover:bg-white/5 rounded-lg text-neutral-400 hover:text-white transition-colors"
@@ -375,7 +396,7 @@ function PortfolioApp() {
               </div>
             ) : (
               <button 
-                onClick={handleLogin}
+                onClick={() => setIsLoginModalOpen(true)}
                 className="flex items-center gap-2 glass glass-hover px-4 py-2 rounded-xl text-sm font-medium"
               >
                 <LogIn size={18} />
@@ -627,6 +648,69 @@ function PortfolioApp() {
                   className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 mt-4"
                 >
                   {editingProject ? 'Update Project' : 'Publish Project'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Login Modal */}
+      <AnimatePresence>
+        {isLoginModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsLoginModalOpen(false)}
+              className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md glass rounded-3xl p-8 shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-display font-bold">Admin Login</h3>
+                <button 
+                  onClick={() => setIsLoginModalOpen(false)}
+                  className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">Email</label>
+                  <input 
+                    required
+                    type="email"
+                    value={loginData.email}
+                    onChange={e => setLoginData({...loginData, email: e.target.value})}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                    placeholder="admin@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">Password</label>
+                  <input 
+                    required
+                    type="password"
+                    value={loginData.password}
+                    onChange={e => setLoginData({...loginData, password: e.target.value})}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                <button 
+                  type="submit"
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 mt-4"
+                >
+                  Login
                 </button>
               </form>
             </motion.div>
