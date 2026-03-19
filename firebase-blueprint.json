@@ -10,15 +10,31 @@
         "imageUrl": { "type": "string", "description": "Direct URL to the project image" },
         "techStack": { "type": "string", "description": "Comma-separated list of technologies used" },
         "demoUrl": { "type": "string", "description": "Link to the live demo" },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the project was added" }
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the project was added" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Timestamp when the project was updated" }
       },
       "required": ["title", "description", "imageUrl"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile and role information",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "description": "User's email address" },
+        "role": { "type": "string", "enum": ["admin", "user"], "description": "User's role in the application" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["email", "role"]
     }
   },
   "firestore": {
     "projects": {
       "schema": "Project",
       "description": "Collection of projects showcased in the portfolio"
+    },
+    "users": {
+      "schema": "User",
+      "description": "Collection of user profiles and roles"
     }
   }
 }

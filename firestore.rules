@@ -1,7 +1,31 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: projects
+    // Fields:
+    //   - title: string (required, 1-100 chars)
+    //   - description: string (required, 1-2000 chars)
+    //   - imageUrl: string (required, URL format)
+    //   - techStack: string (optional, 0-200 chars)
+    //   - demoUrl: string (optional, URL format)
+    //   - createdAt: timestamp (optional)
+    //   - updatedAt: timestamp (optional)
+    //
+    // Collection: users
+    // Fields:
+    //   - email: string (required, 1-100 chars)
+    //   - role: string (required, 'admin' or 'user')
+    //   - updatedAt: timestamp (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -9,22 +33,38 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() &&
         (request.auth.token.email == "shahriarislam275@gmail.com" || 
-         request.auth.uid == "GidKcH7u9VbMEEXhU245isWbWtu2");
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
 
     function isValidProject(data) {
-      return data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
-             data.description is string && data.description.size() > 0 && data.description.size() < 1000 &&
-             data.imageUrl is string && data.imageUrl.size() > 0 &&
-             data.techStack is string &&
-             data.demoUrl is string &&
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 2000 &&
+             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() <= 500 &&
+             data.techStack is string && data.techStack.size() <= 200 &&
+             data.demoUrl is string && data.demoUrl.size() <= 500 &&
              (data.createdAt is timestamp || !('createdAt' in data)) &&
              (data.updatedAt is timestamp || !('updatedAt' in data));
     }
 
+    function isValidUser(data) {
+      return data.email is string && data.email.size() > 0 && data.email.size() <= 100 &&
+             data.role in ['admin', 'user'] &&
+             (data.updatedAt is timestamp || !('updatedAt' in data));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
     match /projects/{projectId} {
       allow read: if true;
       allow create, update, delete: if isAdmin() && isValidProject(request.resource.data);
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create, update: if isAdmin() && isValidUser(request.resource.data);
+      allow delete: if isAdmin();
     }
   }
 }

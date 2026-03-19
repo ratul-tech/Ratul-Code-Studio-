@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { 
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut, 
   onAuthStateChanged,
   User
@@ -272,9 +273,12 @@ function PortfolioApp() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setError(null);
+    setLoading(true);
+
     if (loginData.password !== DEFAULT_ADMIN_PASSWORD) {
       setError("Incorrect admin password.");
+      setLoading(false);
       return;
     }
 
@@ -285,14 +289,28 @@ function PortfolioApp() {
       setError(null);
     } catch (err: any) {
       console.error("Login failed", err);
-      if (err.code === 'auth/configuration-not-found') {
-        throw new Error('auth/configuration-not-found');
-      }
-      if (err.code === 'auth/invalid-credential') {
+      if (err.code === 'auth/user-not-found') {
+        // Try to create the admin user if it doesn't exist (one-time bootstrap)
+        if (loginData.email === ADMIN_EMAIL && loginData.password === DEFAULT_ADMIN_PASSWORD) {
+          try {
+            await createUserWithEmailAndPassword(auth, loginData.email, loginData.password);
+            setIsLoginModalOpen(false);
+            setLoginData({ email: '', password: '' });
+            setError(null);
+            return;
+          } catch (createErr: any) {
+            setError(createErr.message);
+          }
+        } else {
+          setError("Invalid email or password.");
+        }
+      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError("Invalid email or password.");
       } else {
         setError(err.message);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -725,10 +743,18 @@ function PortfolioApp() {
 
                 <button 
                   type="submit"
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 mt-4"
+                  disabled={loading}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 mt-4 disabled:opacity-50"
                 >
-                  Login
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+                  ) : (
+                    "Login"
+                  )}
                 </button>
+                <p className="text-center text-xs text-neutral-500">
+                  Authorized access only.
+                </p>
               </form>
             </motion.div>
           </div>
