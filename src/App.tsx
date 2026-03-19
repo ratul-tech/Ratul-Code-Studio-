@@ -33,7 +33,9 @@ import {
   LayoutGrid,
   Settings,
   AlertCircle,
-  RefreshCcw
+  RefreshCcw,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -196,6 +198,50 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
     return this.props.children;
   }
+}
+
+// --- Project Description Component ---
+
+function ProjectDescription({ text }: { text: string }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const limit = 150;
+  const shouldTruncate = text.length > limit;
+
+  return (
+    <div className="mb-4">
+      <motion.div
+        animate={{ height: isExpanded ? 'auto' : '4.5rem' }}
+        className="overflow-hidden relative"
+      >
+        <p className={cn(
+          "text-neutral-400 text-sm leading-relaxed",
+          !isExpanded && shouldTruncate && "line-clamp-3"
+        )}>
+          {text}
+        </p>
+        {!isExpanded && shouldTruncate && (
+          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-neutral-900/50 to-transparent pointer-events-none" />
+        )}
+      </motion.div>
+      
+      {shouldTruncate && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-2 text-xs font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1 transition-colors"
+        >
+          {isExpanded ? (
+            <>
+              See Less <ChevronUp size={14} />
+            </>
+          ) : (
+            <>
+              See More <ChevronDown size={14} />
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
 }
 
 // --- Main Application ---
@@ -565,9 +611,9 @@ function PortfolioApp() {
                       </div>
                     )}
                   </div>
-                  <p className="text-neutral-400 text-sm mb-4 line-clamp-3">
-                    {project.description}
-                  </p>
+                  
+                  <ProjectDescription text={project.description} />
+
                   <div className="mt-auto pt-4 border-t border-white/5">
                     <div className="flex flex-wrap gap-2">
                       {project.techStack.split(',').map((tech, i) => (
