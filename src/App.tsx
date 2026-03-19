@@ -614,6 +614,18 @@ function PortfolioApp() {
                   
                   <ProjectDescription text={project.description} />
 
+                  {project.demoUrl && (
+                    <a 
+                      href={project.demoUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm font-bold transition-all mb-4 group/btn"
+                    >
+                      Visit Website 
+                      <ExternalLink size={14} className="transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+                    </a>
+                  )}
+
                   <div className="mt-auto pt-4 border-t border-white/5">
                     <div className="flex flex-wrap gap-2">
                       {project.techStack.split(',').map((tech, i) => (
