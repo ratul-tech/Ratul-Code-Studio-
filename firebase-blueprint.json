@@ -1,0 +1,25 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A project showcased in the portfolio",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the project" },
+        "description": { "type": "string", "description": "A short description of the project" },
+        "imageUrl": { "type": "string", "description": "Direct URL to the project image" },
+        "techStack": { "type": "string", "description": "Comma-separated list of technologies used" },
+        "demoUrl": { "type": "string", "description": "Link to the live demo" },
+        "githubUrl": { "type": "string", "description": "Link to the GitHub repository" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the project was added" }
+      },
+      "required": ["title", "description", "imageUrl"]
+    }
+  },
+  "firestore": {
+    "projects": {
+      "schema": "Project",
+      "description": "Collection of projects showcased in the portfolio"
+    }
+  }
+}

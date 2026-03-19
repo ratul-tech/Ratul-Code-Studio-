@@ -1,0 +1,653 @@
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import { 
+  collection, 
+  onSnapshot, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  serverTimestamp,
+  query,
+  orderBy,
+  getDocFromServer
+} from 'firebase/firestore';
+import { 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  onAuthStateChanged,
+  User
+} from 'firebase/auth';
+import { db, auth } from './firebase';
+import { Project } from './types';
+import { 
+  Plus, 
+  Trash2, 
+  Edit3, 
+  ExternalLink, 
+  Github, 
+  LogOut, 
+  LogIn, 
+  X,
+  Code2,
+  LayoutGrid,
+  Settings,
+  AlertCircle,
+  RefreshCcw
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { cn } from './lib/utils';
+
+// --- Error Handling Utilities ---
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+// --- Error Boundary ---
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      let errorMessage = "Something went wrong.";
+      let isPermissionError = false;
+      let isAuthConfigError = false;
+
+      try {
+        const parsed = JSON.parse(this.state.error?.message || '{}');
+        if (parsed.error?.includes('permission-denied')) {
+          isPermissionError = true;
+          errorMessage = "Firestore Permission Denied. Please ensure you have applied the security rules in your Firebase Console.";
+        }
+      } catch {
+        if (this.state.error?.message?.includes('auth/configuration-not-found')) {
+          isAuthConfigError = true;
+          errorMessage = "Firebase Auth Configuration Not Found. Please enable the Google Sign-In provider in your Firebase Console.";
+        } else {
+          errorMessage = this.state.error?.message || errorMessage;
+        }
+      }
+
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-neutral-950 p-6">
+          <div className="max-w-md w-full glass rounded-3xl p-8 text-center">
+            <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="text-red-500 w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-display font-bold mb-4">Application Error</h2>
+            <p className="text-neutral-400 mb-8 leading-relaxed">
+              {errorMessage}
+            </p>
+            
+            {isPermissionError && (
+              <div className="text-left bg-white/5 rounded-xl p-4 mb-8 text-sm space-y-2">
+                <p className="font-bold text-emerald-500">How to fix:</p>
+                <ol className="list-decimal list-inside text-neutral-300 space-y-1">
+                  <li>Go to Firebase Console</li>
+                  <li>Firestore Database &gt; Rules</li>
+                  <li>Set <code className="bg-black/30 px-1 rounded">allow read: if true;</code> for projects</li>
+                  <li>Click Publish</li>
+                </ol>
+              </div>
+            )}
+
+            {isAuthConfigError && (
+              <div className="text-left bg-white/5 rounded-xl p-4 mb-8 text-sm space-y-2">
+                <p className="font-bold text-emerald-500">How to fix:</p>
+                <ol className="list-decimal list-inside text-neutral-300 space-y-1">
+                  <li>Go to Firebase Console</li>
+                  <li>Authentication &gt; Sign-in method</li>
+                  <li>Click "Add new provider"</li>
+                  <li>Select "Google" and enable it</li>
+                </ol>
+              </div>
+            )}
+
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full flex items-center justify-center gap-2 bg-white text-black font-bold py-3 rounded-xl hover:bg-neutral-200 transition-colors"
+            >
+              <RefreshCcw size={18} />
+              Reload Application
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// --- Main Application ---
+
+function PortfolioApp() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    imageUrl: '',
+    techStack: '',
+    demoUrl: '',
+    githubUrl: ''
+  });
+
+  const ADMIN_EMAIL = "shahriarislam275@gmail.com";
+
+  useEffect(() => {
+    async function testConnection() {
+      try {
+        await getDocFromServer(doc(db, 'test', 'connection'));
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('the client is offline')) {
+          console.error("Please check your Firebase configuration. The client is offline.");
+        }
+      }
+    }
+    testConnection();
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAdmin(currentUser?.email === ADMIN_EMAIL);
+      setLoading(false);
+    });
+
+    const q = query(collection(db, 'projects'), orderBy('createdAt', 'desc'));
+    const unsubscribeProjects = onSnapshot(q, (snapshot) => {
+      const projectsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Project[];
+      setProjects(projectsData);
+      setError(null);
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, 'projects');
+    });
+
+    return () => {
+      unsubscribeAuth();
+      unsubscribeProjects();
+    };
+  }, []);
+
+  const handleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (err: any) {
+      console.error("Login failed", err);
+      if (err.code === 'auth/configuration-not-found') {
+        throw new Error('auth/configuration-not-found');
+      }
+      setError(err.message);
+    }
+  };
+
+  const handleLogout = () => signOut(auth);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) return;
+
+    const path = 'projects';
+    try {
+      if (editingProject) {
+        await updateDoc(doc(db, path, editingProject.id!), {
+          ...formData,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await addDoc(collection(db, path), {
+          ...formData,
+          createdAt: serverTimestamp()
+        });
+      }
+      closeModal();
+    } catch (err) {
+      handleFirestoreError(err, editingProject ? OperationType.UPDATE : OperationType.CREATE, path);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!isAdmin || !window.confirm("Are you sure you want to delete this project?")) return;
+    const path = `projects/${id}`;
+    try {
+      await deleteDoc(doc(db, 'projects', id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, path);
+    }
+  };
+
+  const openModal = (project?: Project) => {
+    if (project) {
+      setEditingProject(project);
+      setFormData({
+        title: project.title,
+        description: project.description,
+        imageUrl: project.imageUrl,
+        techStack: project.techStack,
+        demoUrl: project.demoUrl,
+        githubUrl: project.githubUrl
+      });
+    } else {
+      setEditingProject(null);
+      setFormData({
+        title: '',
+        description: '',
+        imageUrl: '',
+        techStack: '',
+        demoUrl: '',
+        githubUrl: ''
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingProject(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-950">
+        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen font-sans">
+      {/* Header */}
+      <nav className="sticky top-0 z-40 glass border-b border-white/5 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <Code2 className="text-white w-6 h-6" />
+            </div>
+            <h1 className="text-xl font-display font-bold tracking-tight">
+              Ratul <span className="text-emerald-500">Code Studio</span>
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {isAdmin && (
+              <button 
+                onClick={() => openModal()}
+                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-emerald-500/20"
+              >
+                <Plus size={18} />
+                <span className="hidden sm:inline">Add Project</span>
+              </button>
+            )}
+            
+            {user ? (
+              <div className="flex items-center gap-3">
+                <img 
+                  src={user.photoURL || ''} 
+                  alt={user.displayName || ''} 
+                  className="w-9 h-9 rounded-full border border-white/10"
+                />
+                <button 
+                  onClick={handleLogout}
+                  className="p-2 hover:bg-white/5 rounded-lg text-neutral-400 hover:text-white transition-colors"
+                  title="Logout"
+                >
+                  <LogOut size={20} />
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={handleLogin}
+                className="flex items-center gap-2 glass glass-hover px-4 py-2 rounded-xl text-sm font-medium"
+              >
+                <LogIn size={18} />
+                Admin Login
+              </button>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-500/10 border-b border-red-500/20 px-6 py-3 text-center">
+          <p className="text-red-400 text-sm flex items-center justify-center gap-2">
+            <AlertCircle size={16} />
+            {error}
+          </p>
+        </div>
+      )}
+
+      {/* Hero Section */}
+      <section className="relative py-24 px-6 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-emerald-500/10 blur-[120px] rounded-full -z-10" />
+        <div className="max-w-7xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h2 className="text-5xl sm:text-7xl font-display font-bold tracking-tight mb-6">
+              Crafting Digital <br />
+              <span className="text-emerald-500">Experiences</span>
+            </h2>
+            <p className="text-neutral-400 text-lg max-w-2xl mx-auto mb-10">
+              A collection of premium web applications, creative experiments, and full-stack solutions built with precision and passion.
+            </p>
+            <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center gap-2 px-4 py-2 glass rounded-full text-sm text-neutral-300">
+                <LayoutGrid size={16} className="text-emerald-500" />
+                {projects.length} Projects
+              </div>
+              {isAdmin && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-sm text-emerald-400">
+                  <Settings size={16} />
+                  Admin Mode
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Projects Grid */}
+      <main className="max-w-7xl mx-auto px-6 pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <AnimatePresence mode="popLayout">
+            {projects.map((project, index) => (
+              <motion.div
+                key={project.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                className="group glass rounded-2xl overflow-hidden glass-hover flex flex-col"
+              >
+                <div className="relative aspect-video overflow-hidden">
+                  <img 
+                    src={project.imageUrl} 
+                    alt={project.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                    <div className="flex gap-3 w-full">
+                      {project.demoUrl && (
+                        <a 
+                          href={project.demoUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex-1 bg-white text-black py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 hover:bg-neutral-200 transition-colors"
+                        >
+                          <ExternalLink size={16} /> Demo
+                        </a>
+                      )}
+                      {project.githubUrl && (
+                        <a 
+                          href={project.githubUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex-1 bg-neutral-800 text-white py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 hover:bg-neutral-700 transition-colors"
+                        >
+                          <Github size={16} /> GitHub
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-xl font-bold font-display">{project.title}</h3>
+                    {isAdmin && (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => openModal(project)}
+                          className="p-1.5 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-emerald-400 transition-colors"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(project.id!)}
+                          className="p-1.5 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-neutral-400 text-sm mb-4 line-clamp-3">
+                    {project.description}
+                  </p>
+                  <div className="mt-auto pt-4 border-t border-white/5">
+                    <div className="flex flex-wrap gap-2">
+                      {project.techStack.split(',').map((tech, i) => (
+                        <span key={i} className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 bg-white/5 rounded-md text-neutral-500">
+                          {tech.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+
+        {projects.length === 0 && (
+          <div className="text-center py-20 glass rounded-3xl">
+            <div className="w-16 h-16 bg-neutral-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Code2 className="text-neutral-600 w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">No projects yet</h3>
+            <p className="text-neutral-500">Check back later or add your first project.</p>
+          </div>
+        )}
+      </main>
+
+      {/* Admin Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeModal}
+              className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-xl glass rounded-3xl p-8 shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-display font-bold">
+                  {editingProject ? 'Edit Project' : 'Add New Project'}
+                </h3>
+                <button 
+                  onClick={closeModal}
+                  className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">Title</label>
+                  <input 
+                    required
+                    type="text"
+                    value={formData.title}
+                    onChange={e => setFormData({...formData, title: e.target.value})}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                    placeholder="Project Title"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">Description</label>
+                  <textarea 
+                    required
+                    rows={3}
+                    value={formData.description}
+                    onChange={e => setFormData({...formData, description: e.target.value})}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors resize-none"
+                    placeholder="Short project description..."
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">Image URL</label>
+                    <input 
+                      required
+                      type="url"
+                      value={formData.imageUrl}
+                      onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                      placeholder="Direct image link"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">Tech Stack</label>
+                    <input 
+                      type="text"
+                      value={formData.techStack}
+                      onChange={e => setFormData({...formData, techStack: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                      placeholder="React, Tailwind, Firebase"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">Demo URL</label>
+                    <input 
+                      type="url"
+                      value={formData.demoUrl}
+                      onChange={e => setFormData({...formData, demoUrl: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                      placeholder="Live demo link"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">GitHub URL</label>
+                    <input 
+                      type="url"
+                      value={formData.githubUrl}
+                      onChange={e => setFormData({...formData, githubUrl: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                      placeholder="Repository link"
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit"
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 mt-4"
+                >
+                  {editingProject ? 'Update Project' : 'Publish Project'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Footer */}
+      <footer className="py-12 border-t border-white/5 text-center">
+        <p className="text-neutral-500 text-sm">
+          © {new Date().getFullYear()} Ratul Code Studio. Built with passion.
+        </p>
+      </footer>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <PortfolioApp />
+    </ErrorBoundary>
+  );
+}
