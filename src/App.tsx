@@ -235,13 +235,17 @@ function PortfolioApp() {
     }
   }, [secretClickCount]);
 
+  const [isOffline, setIsOffline] = useState(false);
+
   useEffect(() => {
     async function testConnection() {
       try {
         await getDocFromServer(doc(db, 'test', 'connection'));
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('the client is offline')) {
+        setIsOffline(false);
+      } catch (error: any) {
+        if (error.message?.includes('the client is offline')) {
           console.error("Please check your Firebase configuration. The client is offline.");
+          setIsOffline(true);
         }
       }
     }
@@ -429,11 +433,13 @@ function PortfolioApp() {
       </nav>
 
       {/* Error Banner */}
-      {error && (
+      {(error || isOffline) && (
         <div className="bg-red-500/10 border-b border-red-500/20 px-6 py-3 text-center">
           <p className="text-red-400 text-sm flex items-center justify-center gap-2">
             <AlertCircle size={16} />
-            {error}
+            {isOffline 
+              ? "Firebase is offline. Please ensure you have created a Firestore database in your Firebase Console and the API is enabled." 
+              : error}
           </p>
         </div>
       )}
