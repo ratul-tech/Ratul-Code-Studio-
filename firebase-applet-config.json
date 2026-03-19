@@ -1,10 +1,9 @@
 {
-  "projectId": "ratul-code-studio-d64c1",
-  "appId": "1:768282230755:web:40631124ff06724cc1ead6",
-  "apiKey": "AIzaSyDG_y-wnfd4fDoXnhf6A_ql-_GVu6ghOMM",
-  "authDomain": "ratul-code-studio-d64c1.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-2846e15b-d33e-4309-8b75-ba278732ded0",
-  "storageBucket": "ratul-code-studio-d64c1.firebasestorage.app",
-  "messagingSenderId": "768282230755",
-  "measurementId": ""
+  "apiKey": "AIzaSyCwCzMH0AYTYmf5uO2tJPnl7gsh40ZDFsk",
+  "authDomain": "ratul-code-studio-a3d85.firebaseapp.com",
+  "projectId": "ratul-code-studio-a3d85",
+  "storageBucket": "ratul-code-studio-a3d85.firebasestorage.app",
+  "messagingSenderId": "1063921507833",
+  "appId": "1:1063921507833:web:1a0c9abe5fb47b3f573128",
+  "firestoreDatabaseId": "(default)"
 }
