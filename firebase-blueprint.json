@@ -10,7 +10,6 @@
         "imageUrl": { "type": "string", "description": "Direct URL to the project image" },
         "techStack": { "type": "string", "description": "Comma-separated list of technologies used" },
         "demoUrl": { "type": "string", "description": "Link to the live demo" },
-        "githubUrl": { "type": "string", "description": "Link to the GitHub repository" },
         "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the project was added" }
       },
       "required": ["title", "description", "imageUrl"]

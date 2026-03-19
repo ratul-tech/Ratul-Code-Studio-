@@ -25,7 +25,6 @@ import {
   Trash2, 
   Edit3, 
   ExternalLink, 
-  Github, 
   LogOut, 
   LogIn, 
   X,
@@ -216,8 +215,7 @@ function PortfolioApp() {
     description: '',
     imageUrl: '',
     techStack: '',
-    demoUrl: '',
-    githubUrl: ''
+    demoUrl: ''
   });
 
   const [loginData, setLoginData] = useState({
@@ -225,7 +223,16 @@ function PortfolioApp() {
     password: ''
   });
 
+  const [secretClickCount, setSecretClickCount] = useState(0);
   const ADMIN_EMAIL = "shahriarislam275@gmail.com";
+  const DEFAULT_ADMIN_PASSWORD = "shahriarislam275@gmail.com";
+
+  useEffect(() => {
+    if (secretClickCount >= 5) {
+      setIsLoginModalOpen(true);
+      setSecretClickCount(0);
+    }
+  }, [secretClickCount]);
 
   useEffect(() => {
     async function testConnection() {
@@ -265,6 +272,12 @@ function PortfolioApp() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (loginData.password !== DEFAULT_ADMIN_PASSWORD) {
+      setError("Incorrect admin password.");
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, loginData.email, loginData.password);
       setIsLoginModalOpen(false);
@@ -326,8 +339,7 @@ function PortfolioApp() {
         description: project.description,
         imageUrl: project.imageUrl,
         techStack: project.techStack,
-        demoUrl: project.demoUrl,
-        githubUrl: project.githubUrl
+        demoUrl: project.demoUrl
       });
     } else {
       setEditingProject(null);
@@ -336,8 +348,7 @@ function PortfolioApp() {
         description: '',
         imageUrl: '',
         techStack: '',
-        demoUrl: '',
-        githubUrl: ''
+        demoUrl: ''
       });
     }
     setIsModalOpen(true);
@@ -394,15 +405,7 @@ function PortfolioApp() {
                   <LogOut size={20} />
                 </button>
               </div>
-            ) : (
-              <button 
-                onClick={() => setIsLoginModalOpen(true)}
-                className="flex items-center gap-2 glass glass-hover px-4 py-2 rounded-xl text-sm font-medium"
-              >
-                <LogIn size={18} />
-                Admin Login
-              </button>
-            )}
+            ) : null}
           </div>
         </div>
       </nav>
@@ -418,33 +421,55 @@ function PortfolioApp() {
       )}
 
       {/* Hero Section */}
-      <section className="relative py-24 px-6 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-emerald-500/10 blur-[120px] rounded-full -z-10" />
+      <section className="relative py-32 px-6 overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.5 }}
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-emerald-500/10 blur-[120px] rounded-full -z-10" 
+        />
         <div className="max-w-7xl mx-auto text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h2 className="text-5xl sm:text-7xl font-display font-bold tracking-tight mb-6">
+            <h2 className="text-6xl sm:text-8xl font-display font-bold tracking-tighter mb-8 leading-[0.9]">
               Crafting Digital <br />
-              <span className="text-emerald-500">Experiences</span>
+              <motion.span 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4, duration: 0.8 }}
+                className="text-emerald-500"
+              >
+                Experiences
+              </motion.span>
             </h2>
-            <p className="text-neutral-400 text-lg max-w-2xl mx-auto mb-10">
+            <motion.p 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              transition={{ delay: 0.6, duration: 1 }}
+              className="text-neutral-400 text-xl max-w-2xl mx-auto mb-12 font-light"
+            >
               A collection of premium web applications, creative experiments, and full-stack solutions built with precision and passion.
-            </p>
-            <div className="flex items-center justify-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 glass rounded-full text-sm text-neutral-300">
+            </motion.p>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.8 }}
+              className="flex items-center justify-center gap-4"
+            >
+              <div className="flex items-center gap-2 px-5 py-2.5 glass rounded-full text-sm text-neutral-300">
                 <LayoutGrid size={16} className="text-emerald-500" />
                 {projects.length} Projects
               </div>
               {isAdmin && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-sm text-emerald-400">
-                  <Settings size={16} />
+                <div className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-sm text-emerald-400">
+                  <Settings size={16} className="animate-spin-slow" />
                   Admin Mode
                 </div>
               )}
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -457,42 +482,42 @@ function PortfolioApp() {
               <motion.div
                 key={project.id}
                 layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
+                transition={{ 
+                  duration: 0.6, 
+                  delay: index * 0.05,
+                  ease: [0.16, 1, 0.3, 1]
+                }}
+                whileHover={{ y: -8 }}
                 className="group glass rounded-2xl overflow-hidden glass-hover flex flex-col"
               >
                 <div className="relative aspect-video overflow-hidden">
                   <img 
                     src={project.imageUrl} 
                     alt={project.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                    <div className="flex gap-3 w-full">
+                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/90 via-neutral-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-end p-6">
+                    <motion.div 
+                      initial={{ y: 20, opacity: 0 }}
+                      whileHover={{ y: 0, opacity: 1 }}
+                      className="flex gap-3 w-full"
+                    >
                       {project.demoUrl && (
                         <a 
                           href={project.demoUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="flex-1 bg-white text-black py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 hover:bg-neutral-200 transition-colors"
+                          className="flex-1 bg-white text-black py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-neutral-200 transition-colors shadow-xl"
                         >
-                          <ExternalLink size={16} /> Demo
+                          <ExternalLink size={16} /> Live Demo
                         </a>
                       )}
-                      {project.githubUrl && (
-                        <a 
-                          href={project.githubUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex-1 bg-neutral-800 text-white py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 hover:bg-neutral-700 transition-colors"
-                        >
-                          <Github size={16} /> GitHub
-                        </a>
-                      )}
-                    </div>
+                    </motion.div>
                   </div>
                 </div>
 
@@ -557,9 +582,10 @@ function PortfolioApp() {
               className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.9, y: 40 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              exit={{ opacity: 0, scale: 0.9, y: 40 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="relative w-full max-w-xl glass rounded-3xl p-8 shadow-2xl"
             >
               <div className="flex justify-between items-center mb-6">
@@ -620,7 +646,7 @@ function PortfolioApp() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">Demo URL</label>
                     <input 
@@ -629,16 +655,6 @@ function PortfolioApp() {
                       onChange={e => setFormData({...formData, demoUrl: e.target.value})}
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors"
                       placeholder="Live demo link"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">GitHub URL</label>
-                    <input 
-                      type="url"
-                      value={formData.githubUrl}
-                      onChange={e => setFormData({...formData, githubUrl: e.target.value})}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors"
-                      placeholder="Repository link"
                     />
                   </div>
                 </div>
@@ -667,9 +683,10 @@ function PortfolioApp() {
               className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.9, y: 40 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              exit={{ opacity: 0, scale: 0.9, y: 40 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="relative w-full max-w-md glass rounded-3xl p-8 shadow-2xl"
             >
               <div className="flex justify-between items-center mb-6">
@@ -720,9 +737,13 @@ function PortfolioApp() {
 
       {/* Footer */}
       <footer className="py-12 border-t border-white/5 text-center">
-        <p className="text-neutral-500 text-sm">
+        <motion.p 
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setSecretClickCount(prev => prev + 1)}
+          className="text-neutral-500 text-sm cursor-default select-none"
+        >
           © {new Date().getFullYear()} Ratul Code Studio. Built with passion.
-        </p>
+        </motion.p>
       </footer>
     </div>
   );

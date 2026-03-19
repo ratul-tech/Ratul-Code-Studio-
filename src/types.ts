@@ -5,6 +5,5 @@ export interface Project {
   imageUrl: string;
   techStack: string;
   demoUrl: string;
-  githubUrl: string;
   createdAt: any;
 }

@@ -18,7 +18,6 @@ service cloud.firestore {
              data.imageUrl is string && data.imageUrl.size() > 0 &&
              data.techStack is string &&
              data.demoUrl is string &&
-             data.githubUrl is string &&
              (data.createdAt is timestamp || !('createdAt' in data)) &&
              (data.updatedAt is timestamp || !('updatedAt' in data));
     }
