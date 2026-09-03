@@ -1,5 +1,8 @@
 {
   "name": "Ratul Code Studio",
-  "description": "A premium project showcase portfolio with a secure admin panel for project management.",
-  "requestFramePermissions": []
+  "description": "Portfolio of Shahriar Islam Ratul, an independent web developer mastering modern software prototyping, Vibe coding, and LLMs in the creation of web apps.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

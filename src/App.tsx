@@ -35,10 +35,21 @@ import {
   AlertCircle,
   RefreshCcw,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ArrowUp,
+  Sparkles,
+  Zap,
+  Mail,
+  ArrowRight,
+  Check,
+  MessageCircle,
+  Facebook,
+  Instagram
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
+import { AnimatedProfilePhoto } from './components/AnimatedProfilePhoto';
+import { ContactSection } from './components/ContactSection';
 
 // --- Error Handling Utilities ---
 
@@ -244,10 +255,43 @@ function ProjectDescription({ text }: { text: string }) {
   );
 }
 
+// --- Default Portfolio Projects ---
+
+const DEFAULT_PROJECTS: Project[] = [
+  {
+    id: 'prototype-1',
+    title: 'VibeFlow · AI Applet Studio',
+    description: 'An intelligent rapid web app prototyping canvas built to turn natural language prompts into live interactive components. Leverages LLM reasoning, instantaneous hot previews, and modular state management to compress prototyping cycles from days to minutes.',
+    imageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=80',
+    techStack: 'React, TypeScript, Tailwind CSS, Gemini API',
+    demoUrl: 'https://github.com',
+    createdAt: null
+  },
+  {
+    id: 'prototype-2',
+    title: 'Cognitive Canvas · Workflow Engine',
+    description: 'A visual prototyping suite for experimenting with multi-agent coordination, structured prompts, and automated web app pipelines. Built to explore the boundary between human creative direction and automated code synthesis.',
+    imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
+    techStack: 'Vite, React, Motion, Firebase',
+    demoUrl: 'https://github.com',
+    createdAt: null
+  },
+  {
+    id: 'prototype-3',
+    title: 'PromptCraft · Rapid Prototyper',
+    description: 'A developer utility for crafting, testing, and benchmarking production prompts for LLM-driven applications. Features interactive parameter tweaking, token inspection, and swift prototyping feedback to streamline vibe-coding iterations.',
+    imageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+    techStack: 'Next.js, Tailwind CSS, WebSockets, TypeScript',
+    demoUrl: 'https://github.com',
+    createdAt: null
+  }
+];
+
 // --- Main Application ---
 
 function PortfolioApp() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [copiedEmail, setCopiedEmail] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -271,8 +315,35 @@ function PortfolioApp() {
   });
 
   const [secretClickCount, setSecretClickCount] = useState(0);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const ADMIN_EMAIL = "shahriarislam275@gmail.com";
   const DEFAULT_ADMIN_PASSWORD = "shahriarislam275@gmail.com";
+  const WHATSAPP_RAW = "8801743904049";
+  const WHATSAPP_NUMBER = "+8801743904049";
+  const WHATSAPP_DEFAULT_MSG = "Hi Shahriar! I saw your portfolio and would like to discuss a project with you.";
+  const WHATSAPP_URL = `https://wa.me/${WHATSAPP_RAW}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MSG)}`;
+  const FACEBOOK_URL = "https://www.facebook.com/shahriar.islam.ratul.00";
+  const INSTAGRAM_URL = "https://www.instagram.com/shahriar_islam_ratul/";
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   useEffect(() => {
     if (secretClickCount >= 5) {
@@ -435,34 +506,105 @@ function PortfolioApp() {
     );
   }
 
+  const displayProjects = projects.length > 0 ? projects : DEFAULT_PROJECTS;
+
+  const copyEmail = () => {
+    navigator.clipboard?.writeText(ADMIN_EMAIL);
+    setCopiedEmail(true);
+    setTimeout(() => setCopiedEmail(false), 2000);
+  };
+
+  const scrollToProjects = () => {
+    const el = document.getElementById('projects');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const scrollToContact = () => {
+    const el = document.getElementById('contact');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen font-sans">
       {/* Header */}
       <nav className="sticky top-0 z-40 glass border-b border-white/5 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
               <Code2 className="text-white w-6 h-6" />
             </div>
-            <h1 className="text-xl font-display font-bold tracking-tight">
-              Ratul <span className="text-emerald-500">Code Studio</span>
-            </h1>
+            <div>
+              <h1 className="text-lg sm:text-xl font-display font-bold tracking-tight">
+                Shahriar Islam <span className="text-emerald-500">Ratul</span>
+              </h1>
+              <p className="text-[11px] text-neutral-400 font-mono hidden sm:block">
+                Web Developer &amp; Prototyper
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <button 
+              onClick={scrollToProjects}
+              className="text-sm text-neutral-300 hover:text-white transition-colors hidden md:block"
+            >
+              Projects
+            </button>
+            <button 
+              onClick={scrollToContact}
+              className="text-sm text-neutral-300 hover:text-white transition-colors hidden md:block"
+            >
+              Contact
+            </button>
+
+            {/* Quick Social Icons in Navbar */}
+            <div className="hidden lg:flex items-center gap-1.5 pl-2 border-l border-white/10">
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 hover:bg-emerald-500/10 text-neutral-400 hover:text-emerald-400 rounded-lg transition-colors"
+                title="Chat on WhatsApp (+8801743904049)"
+              >
+                <MessageCircle size={17} />
+              </a>
+              <a
+                href={FACEBOOK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 hover:bg-sky-500/10 text-neutral-400 hover:text-sky-400 rounded-lg transition-colors"
+                title="Facebook Profile"
+              >
+                <Facebook size={17} />
+              </a>
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 hover:bg-pink-500/10 text-neutral-400 hover:text-pink-400 rounded-lg transition-colors"
+                title="Instagram Profile"
+              >
+                <Instagram size={17} />
+              </a>
+            </div>
+
             {isAdmin && (
               <button 
                 onClick={() => openModal()}
-                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-emerald-500/20"
+                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-2 rounded-xl transition-all shadow-lg shadow-emerald-500/20 text-sm font-semibold"
               >
-                <Plus size={18} />
-                <span className="hidden sm:inline">Add Project</span>
+                <Plus size={16} />
+                <span>Add Project</span>
               </button>
             )}
             
             {user ? (
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold border border-emerald-500/20">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold border border-emerald-500/20 text-sm">
                   {user.email?.[0].toUpperCase()}
                 </div>
                 <button 
@@ -470,7 +612,7 @@ function PortfolioApp() {
                   className="p-2 hover:bg-white/5 rounded-lg text-neutral-400 hover:text-white transition-colors"
                   title="Logout"
                 >
-                  <LogOut size={20} />
+                  <LogOut size={18} />
                 </button>
               </div>
             ) : null}
@@ -491,78 +633,246 @@ function PortfolioApp() {
       )}
 
       {/* Hero Section */}
-      <section className="relative py-32 px-6 overflow-hidden">
+      <section className="relative pt-16 sm:pt-20 pb-20 px-6 overflow-hidden">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.5 }}
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-emerald-500/10 blur-[120px] rounded-full -z-10" 
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[28rem] bg-emerald-500/10 blur-[130px] rounded-full -z-10 pointer-events-none" 
         />
-        <div className="max-w-7xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <h2 className="text-6xl sm:text-8xl font-display font-bold tracking-tighter mb-8 leading-[0.9]">
-              Crafting Digital <br />
-              <motion.span 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4, duration: 0.8 }}
-                className="text-emerald-500"
-              >
-                Experiences
-              </motion.span>
-            </h2>
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.6 }}
-              transition={{ delay: 0.6, duration: 1 }}
-              className="text-neutral-400 text-xl max-w-2xl mx-auto mb-12 font-light"
+        
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left Content Column */}
+            <motion.div
+              initial={{ opacity: 0, y: 25 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="lg:col-span-7 text-center lg:text-left"
             >
-              A collection of premium web applications, creative experiments, and full-stack solutions built with precision and passion.
-            </motion.p>
-            <motion.div 
+              {/* Status pill */}
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 glass rounded-full text-xs text-neutral-300 mb-6 border border-white/10">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Independent Web Developer &amp; Software Prototyper</span>
+              </div>
+
+              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-bold tracking-tighter mb-6 leading-[1]">
+                Shahriar Islam <br className="hidden sm:inline" />
+                <motion.span 
+                  initial={{ opacity: 0, x: -15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3, duration: 0.7 }}
+                  className="text-emerald-500"
+                >
+                  Ratul
+                </motion.span>
+              </h1>
+
+              {/* Requested Biography */}
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.8 }}
+                className="text-neutral-300 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 mb-8 leading-relaxed font-normal"
+              >
+                I am an independent web developer in the path of mastery of the art of modern software prototyping. Since 2025, I have been learning how to use Vibe coding and LLMs in the creation of web apps. I try to be fast in my prototyping by using my powers of thinking and prompting in tandem with my knowledge of web dev.
+              </motion.p>
+
+              {/* Action buttons */}
+              <motion.div 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55 }}
+                className="flex flex-wrap items-center justify-center lg:justify-start gap-3.5 mb-8"
+              >
+                <button
+                  onClick={scrollToProjects}
+                  className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
+                >
+                  <span>Explore Projects</span>
+                  <ArrowRight size={16} />
+                </button>
+
+                <a
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 font-medium px-5 py-3 rounded-xl transition-all shadow-lg hover:border-emerald-400/50"
+                  title="Direct WhatsApp Inbox with default message"
+                >
+                  <MessageCircle size={16} className="text-emerald-400" />
+                  <span>WhatsApp Me</span>
+                </a>
+
+                <button
+                  onClick={scrollToContact}
+                  className="inline-flex items-center gap-2 glass hover:bg-white/10 text-neutral-200 font-medium px-5 py-3 rounded-xl transition-all border border-white/10 text-sm"
+                >
+                  <Mail size={16} className="text-emerald-400" />
+                  <span>Get In Touch</span>
+                </button>
+              </motion.div>
+
+              {/* Social Quick Pills */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.65 }}
+                className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 pt-4 border-t border-white/5"
+              >
+                <span className="text-xs text-neutral-500 font-mono mr-1">Connect:</span>
+                
+                <a
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass text-xs text-neutral-300 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
+                >
+                  <MessageCircle size={13} className="text-emerald-400" />
+                  <span>WhatsApp: {WHATSAPP_NUMBER}</span>
+                </a>
+
+                <a
+                  href={FACEBOOK_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass text-xs text-neutral-300 hover:text-sky-400 hover:border-sky-500/30 transition-colors"
+                >
+                  <Facebook size={13} className="text-sky-400" />
+                  <span>Facebook</span>
+                </a>
+
+                <a
+                  href={INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass text-xs text-neutral-300 hover:text-pink-400 hover:border-pink-500/30 transition-colors"
+                >
+                  <Instagram size={13} className="text-pink-400" />
+                  <span>Instagram</span>
+                </a>
+
+                <button
+                  onClick={copyEmail}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass text-xs text-neutral-300 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
+                  title="Click to copy email"
+                >
+                  {copiedEmail ? (
+                    <>
+                      <Check size={13} className="text-emerald-400" />
+                      <span className="text-emerald-400">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mail size={13} className="text-emerald-400" />
+                      <span>{ADMIN_EMAIL}</span>
+                    </>
+                  )}
+                </button>
+              </motion.div>
+            </motion.div>
+
+            {/* Right Photo Column with Attractive Animation */}
+            <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8 }}
-              className="flex items-center justify-center gap-4"
+              transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="lg:col-span-5 flex justify-center items-center"
             >
-              <div className="flex items-center gap-2 px-5 py-2.5 glass rounded-full text-sm text-neutral-300">
-                <LayoutGrid size={16} className="text-emerald-500" />
-                {projects.length} Projects
-              </div>
-              {isAdmin && (
-                <div className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-sm text-emerald-400">
-                  <Settings size={16} className="animate-spin-slow" />
-                  Admin Mode
-                </div>
-              )}
+              <AnimatedProfilePhoto 
+                name="Shahriar Islam Ratul" 
+                title="Independent Web Developer & Software Prototyper" 
+              />
             </motion.div>
+          </div>
+
+          {/* 3 Core Pillars */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left mt-16"
+          >
+            <div className="glass rounded-2xl p-5 border border-white/5">
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-3 border border-emerald-500/20">
+                <Sparkles size={18} />
+              </div>
+              <h2 className="text-sm font-bold text-white mb-1">Vibe Coding &amp; LLMs</h2>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Leveraging LLMs and conversational coding since 2025 to synthesize web applications rapidly.
+              </p>
+            </div>
+
+            <div className="glass rounded-2xl p-5 border border-white/5">
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-3 border border-emerald-500/20">
+                <Zap size={18} />
+              </div>
+              <h2 className="text-sm font-bold text-white mb-1">Rapid Prototyping</h2>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Translating concepts into functional, interactive software prototypes with speed and agility.
+              </p>
+            </div>
+
+            <div className="glass rounded-2xl p-5 border border-white/5">
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-3 border border-emerald-500/20">
+                <Code2 size={18} />
+              </div>
+              <h2 className="text-sm font-bold text-white mb-1">Thought &amp; Web Dev</h2>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Combining structured prompting and creative thinking in tandem with modern web engineering.
+              </p>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Projects Grid */}
-      <main className="max-w-7xl mx-auto px-6 pb-24">
+      {/* Projects Section */}
+      <main id="projects" className="max-w-7xl mx-auto px-6 pb-24 scroll-mt-24">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 pb-4 border-b border-white/5 gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400 mb-2">
+              <LayoutGrid size={14} />
+              <span>Showcase</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-display font-bold tracking-tight">
+              Featured Projects &amp; Prototypes
+            </h2>
+            <p className="text-neutral-400 text-sm mt-1">
+              Web applications and interactive prototypes demonstrating modern prototyping workflows.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 glass rounded-full text-xs text-neutral-300">
+              <LayoutGrid size={14} className="text-emerald-500" />
+              {displayProjects.length} Projects
+            </div>
+            {isAdmin && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs text-emerald-400">
+                <Settings size={14} className="animate-spin-slow" />
+                Admin Mode
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <AnimatePresence mode="popLayout">
-            {projects.map((project, index) => (
+            {displayProjects.map((project, index) => (
               <motion.div
-                key={project.id}
+                key={project.id || index}
                 layout
-                initial={{ opacity: 0, y: 40 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ 
-                  duration: 0.6, 
-                  delay: index * 0.05,
+                  duration: 0.5, 
+                  delay: index * 0.06,
                   ease: [0.16, 1, 0.3, 1]
                 }}
-                whileHover={{ y: -8 }}
-                className="group glass rounded-2xl overflow-hidden glass-hover flex flex-col"
+                whileHover={{ y: -6 }}
+                className="group glass rounded-2xl overflow-hidden glass-hover flex flex-col border border-white/5"
               >
                 <div className="relative aspect-video overflow-hidden">
                   <img 
@@ -594,7 +904,7 @@ function PortfolioApp() {
                 <div className="p-6 flex-1 flex flex-col">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="text-xl font-bold font-display">{project.title}</h3>
-                    {isAdmin && (
+                    {isAdmin && project.id && !project.id.startsWith('prototype-') && (
                       <div className="flex gap-2">
                         <button 
                           onClick={() => openModal(project)}
@@ -629,7 +939,7 @@ function PortfolioApp() {
                   <div className="mt-auto pt-4 border-t border-white/5">
                     <div className="flex flex-wrap gap-2">
                       {project.techStack.split(',').map((tech, i) => (
-                        <span key={i} className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 bg-white/5 rounded-md text-neutral-500">
+                        <span key={i} className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 bg-white/5 rounded-md text-neutral-400">
                           {tech.trim()}
                         </span>
                       ))}
@@ -641,7 +951,7 @@ function PortfolioApp() {
           </AnimatePresence>
         </div>
 
-        {projects.length === 0 && (
+        {displayProjects.length === 0 && (
           <div className="text-center py-20 glass rounded-3xl">
             <div className="w-16 h-16 bg-neutral-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Code2 className="text-neutral-600 w-8 h-8" />
@@ -650,6 +960,9 @@ function PortfolioApp() {
             <p className="text-neutral-500">Check back later or add your first project.</p>
           </div>
         )}
+
+        {/* Dedicated Contact Section */}
+        <ContactSection />
       </main>
 
       {/* Admin Modal */}
@@ -826,15 +1139,80 @@ function PortfolioApp() {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-white/5 text-center">
-        <motion.p 
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setSecretClickCount(prev => prev + 1)}
-          className="text-neutral-500 text-sm cursor-default select-none"
-        >
-          © {new Date().getFullYear()} Ratul Code Studio. Built with passion.
-        </motion.p>
+      <footer className="py-12 border-t border-white/5 text-center px-6">
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-6">
+          <div className="flex flex-wrap justify-center items-center gap-4">
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 glass rounded-full text-xs text-neutral-300 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
+            >
+              <MessageCircle size={14} className="text-emerald-400" />
+              <span>WhatsApp: {WHATSAPP_NUMBER}</span>
+            </a>
+
+            <a
+              href={FACEBOOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 glass rounded-full text-xs text-neutral-300 hover:text-sky-400 hover:border-sky-500/30 transition-colors"
+            >
+              <Facebook size={14} className="text-sky-400" />
+              <span>Facebook</span>
+            </a>
+
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 glass rounded-full text-xs text-neutral-300 hover:text-pink-400 hover:border-pink-500/30 transition-colors"
+            >
+              <Instagram size={14} className="text-pink-400" />
+              <span>Instagram</span>
+            </a>
+
+            <a
+              href={`mailto:${ADMIN_EMAIL}`}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 glass rounded-full text-xs text-neutral-300 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
+            >
+              <Mail size={14} className="text-emerald-400" />
+              <span>{ADMIN_EMAIL}</span>
+            </a>
+          </div>
+
+          <motion.p 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setSecretClickCount(prev => prev + 1)}
+            className="text-neutral-500 text-xs sm:text-sm cursor-default select-none"
+            title="Shahriar Islam Ratul"
+          >
+            © {new Date().getFullYear()} Shahriar Islam Ratul. Built with passion &amp; Vibe coding.
+          </motion.p>
+        </div>
       </footer>
+
+      {/* Scroll to Top Floating Button */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            id="scroll-to-top-button"
+            key="scroll-to-top"
+            initial={{ opacity: 0, scale: 0.7, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.7, y: 20 }}
+            whileHover={{ scale: 1.08, y: -2 }}
+            whileTap={{ scale: 0.92 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            onClick={scrollToTop}
+            aria-label="Scroll to top"
+            title="Scroll to top"
+            className="fixed bottom-8 right-8 z-40 p-3.5 glass rounded-2xl text-neutral-300 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-emerald-500/10 shadow-2xl shadow-black/50 transition-colors backdrop-blur-md group focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+          >
+            <ArrowUp size={20} className="transition-transform duration-300 group-hover:-translate-y-0.5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
