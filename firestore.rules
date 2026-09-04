@@ -61,6 +61,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin() && isValidProject(request.resource.data);
     }
 
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /users/{userId} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow create, update: if isAdmin() && isValidUser(request.resource.data);

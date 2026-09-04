@@ -1,18 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, Zap, Maximize2, X } from 'lucide-react';
-import profilePhoto from '../assets/images/ratul_profile_1788454544356.jpg';
+import profilePhoto from '../assets/images/ratul_profile.jpg';
 
 interface AnimatedProfilePhotoProps {
   name?: string;
   title?: string;
+  imageUrl?: string;
 }
 
 export function AnimatedProfilePhoto({
   name = "Shahriar Islam Ratul",
-  title = "Software Prototyper"
+  title = "Software Prototyper",
+  imageUrl
 }: AnimatedProfilePhotoProps) {
   const [isZoomed, setIsZoomed] = useState(false);
+  const [imgSrc, setImgSrc] = useState<string>(imageUrl && imageUrl.trim() ? imageUrl.trim() : profilePhoto);
+
+  // Sync with imageUrl changes if admin edits it
+  useEffect(() => {
+    if (imageUrl && imageUrl.trim()) {
+      setImgSrc(imageUrl.trim());
+    } else {
+      setImgSrc(profilePhoto);
+    }
+  }, [imageUrl]);
 
   return (
     <>
@@ -65,17 +77,17 @@ export function AnimatedProfilePhoto({
             {/* Inner Image Wrapper */}
             <div className="relative w-full h-full rounded-[2.1rem] overflow-hidden bg-neutral-900">
               <img
-                src={profilePhoto}
+                src={imgSrc}
                 alt={name}
                 referrerPolicy="no-referrer"
-                className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-108"
+                onError={() => {
+                  if (imgSrc !== profilePhoto) setImgSrc(profilePhoto);
+                }}
+                className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
               />
 
-              {/* Radial Vignette & Shimmer Sheen */}
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-neutral-950/10 to-transparent pointer-events-none" />
-
-              {/* Subtle hover overlay hint */}
-              <div className="absolute inset-0 bg-emerald-950/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+              {/* Subtle hover expand tag */}
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
                 <span className="px-3.5 py-1.5 glass rounded-full text-xs text-white font-medium flex items-center gap-1.5 shadow-lg border border-white/20">
                   <Maximize2 size={13} /> Click to expand
                 </span>
@@ -156,9 +168,12 @@ export function AnimatedProfilePhoto({
 
             <div className="rounded-2xl overflow-hidden aspect-square bg-neutral-900 mb-4 border border-white/10">
               <img
-                src={profilePhoto}
+                src={imgSrc}
                 alt={name}
                 referrerPolicy="no-referrer"
+                onError={() => {
+                  if (imgSrc !== profilePhoto) setImgSrc(profilePhoto);
+                }}
                 className="w-full h-full object-cover"
               />
             </div>

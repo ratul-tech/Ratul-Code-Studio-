@@ -12,17 +12,37 @@ import {
   Sparkles
 } from 'lucide-react';
 
-export function ContactSection() {
+interface ContactSectionProps {
+  email?: string;
+  phoneNumber?: string;
+  whatsappRaw?: string;
+  whatsappDefaultMsg?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  heading?: string;
+  subtitle?: string;
+}
+
+export function ContactSection({
+  email = "shahriarislam275@gmail.com",
+  phoneNumber = "+8801743904049",
+  whatsappRaw = "8801743904049",
+  whatsappDefaultMsg = "Hi Shahriar! I saw your portfolio and would like to discuss a project with you.",
+  facebookUrl = "https://www.facebook.com/shahriar.islam.ratul.00",
+  instagramUrl = "https://www.instagram.com/shahriar_islam_ratul/",
+  heading = "Get In Touch",
+  subtitle = "Have an idea, need a rapid prototype, or want to collaborate? Reach out directly through any of the channels below."
+}: ContactSectionProps) {
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
 
-  const EMAIL = "shahriarislam275@gmail.com";
-  const PHONE_NUMBER = "+8801743904049";
-  const WHATSAPP_RAW = "8801743904049";
-  const DEFAULT_MESSAGE = "Hi Shahriar! I saw your portfolio and would like to discuss a project with you.";
-  const WHATSAPP_URL = `https://wa.me/${WHATSAPP_RAW}?text=${encodeURIComponent(DEFAULT_MESSAGE)}`;
-  const FACEBOOK_URL = "https://www.facebook.com/shahriar.islam.ratul.00";
-  const INSTAGRAM_URL = "https://www.instagram.com/shahriar_islam_ratul/";
+  const EMAIL = email || "shahriarislam275@gmail.com";
+  const PHONE_NUMBER = phoneNumber || "+8801743904049";
+  const RAW_PHONE = whatsappRaw || "8801743904049";
+  const DEFAULT_MESSAGE = whatsappDefaultMsg || "Hi Shahriar! I saw your portfolio and would like to discuss a project with you.";
+  const WHATSAPP_URL = `https://wa.me/${RAW_PHONE.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(DEFAULT_MESSAGE)}`;
+  const FACEBOOK_URL = facebookUrl || "https://www.facebook.com/shahriar.islam.ratul.00";
+  const INSTAGRAM_URL = instagramUrl || "https://www.instagram.com/shahriar_islam_ratul/";
 
   const copyEmail = () => {
     navigator.clipboard?.writeText(EMAIL);
@@ -118,10 +138,10 @@ export function ContactSection() {
           <span>Let&apos;s Build Together</span>
         </div>
         <h2 className="text-3xl sm:text-5xl font-display font-bold tracking-tight text-white mb-3">
-          Get In <span className="text-emerald-500">Touch</span>
+          {heading}
         </h2>
         <p className="text-neutral-400 text-sm sm:text-base font-light">
-          Have an idea, need a rapid prototype, or want to collaborate? Reach out directly through any of the channels below.
+          {subtitle}
         </p>
       </div>
 

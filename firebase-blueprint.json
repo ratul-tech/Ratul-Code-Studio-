@@ -28,6 +28,10 @@
     }
   },
   "firestore": {
+    "settings": {
+      "schema": "SiteSettings",
+      "description": "Customizable website texts, bio, image URL, and contacts"
+    },
     "projects": {
       "schema": "Project",
       "description": "Collection of projects showcased in the portfolio"

@@ -10,6 +10,8 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  getDoc,
+  setDoc,
   getDocFromServer
 } from 'firebase/firestore';
 import { 
@@ -20,7 +22,7 @@ import {
   User
 } from 'firebase/auth';
 import { db, auth } from './firebase';
-import { Project } from './types';
+import { Project, SiteSettings, DEFAULT_SITE_SETTINGS } from './types';
 import { 
   Plus, 
   Trash2, 
@@ -32,6 +34,7 @@ import {
   Code2,
   LayoutGrid,
   Settings,
+  Sliders,
   AlertCircle,
   RefreshCcw,
   ChevronDown,
@@ -44,12 +47,21 @@ import {
   Check,
   MessageCircle,
   Facebook,
-  Instagram
+  Instagram,
+  Lock,
+  ShieldCheck,
+  Image as ImageIcon,
+  FolderGit2,
+  Globe,
+  LayoutDashboard,
+  Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 import { AnimatedProfilePhoto } from './components/AnimatedProfilePhoto';
 import { ContactSection } from './components/ContactSection';
+import { SiteSettingsModal } from './components/SiteSettingsModal';
+import { AdminPanel } from './components/AdminPanel';
 
 // --- Error Handling Utilities ---
 
@@ -313,17 +325,29 @@ function PortfolioApp() {
     email: '',
     password: ''
   });
-
-  const [secretClickCount, setSecretClickCount] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Site customizer settings (all details editable A to Z including profile photo URL)
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
+    try {
+      const cached = localStorage.getItem('portfolio_site_settings');
+      if (cached) return { ...DEFAULT_SITE_SETTINGS, ...JSON.parse(cached) };
+    } catch (_) {}
+    return DEFAULT_SITE_SETTINGS;
+  });
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [adminPanelDefaultTab, setAdminPanelDefaultTab] = useState<'projects' | 'website' | 'overview'>('projects');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
   const ADMIN_EMAIL = "shahriarislam275@gmail.com";
-  const DEFAULT_ADMIN_PASSWORD = "shahriarislam275@gmail.com";
-  const WHATSAPP_RAW = "8801743904049";
-  const WHATSAPP_NUMBER = "+8801743904049";
-  const WHATSAPP_DEFAULT_MSG = "Hi Shahriar! I saw your portfolio and would like to discuss a project with you.";
-  const WHATSAPP_URL = `https://wa.me/${WHATSAPP_RAW}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MSG)}`;
-  const FACEBOOK_URL = "https://www.facebook.com/shahriar.islam.ratul.00";
-  const INSTAGRAM_URL = "https://www.instagram.com/shahriar_islam_ratul/";
+  const WHATSAPP_RAW = siteSettings.whatsappRaw || "8801743904049";
+  const WHATSAPP_NUMBER = siteSettings.whatsappNumber || "+8801743904049";
+  const WHATSAPP_DEFAULT_MSG = siteSettings.whatsappDefaultMsg || "Hi Shahriar! I saw your portfolio and would like to discuss a project with you.";
+  const WHATSAPP_URL = `https://wa.me/${WHATSAPP_RAW.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MSG)}`;
+  const FACEBOOK_URL = siteSettings.facebookUrl || "https://www.facebook.com/shahriar.islam.ratul.00";
+  const INSTAGRAM_URL = siteSettings.instagramUrl || "https://www.instagram.com/shahriar_islam_ratul/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -345,13 +369,6 @@ function PortfolioApp() {
     });
   };
 
-  useEffect(() => {
-    if (secretClickCount >= 5) {
-      setIsLoginModalOpen(true);
-      setSecretClickCount(0);
-    }
-  }, [secretClickCount]);
-
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
@@ -368,9 +385,24 @@ function PortfolioApp() {
     }
     testConnection();
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      setIsAdmin(currentUser?.email === ADMIN_EMAIL);
+      if (currentUser) {
+        let adminStatus = currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+        if (!adminStatus) {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+            if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+              adminStatus = true;
+            }
+          } catch (e) {
+            console.error("Error checking admin role doc:", e);
+          }
+        }
+        setIsAdmin(adminStatus);
+      } else {
+        setIsAdmin(false);
+      }
       setLoading(false);
     });
 
@@ -386,49 +418,105 @@ function PortfolioApp() {
       handleFirestoreError(err, OperationType.GET, 'projects');
     });
 
+    // Real-time synchronization for site settings & profile image URL
+    const unsubscribeSettings = onSnapshot(doc(db, 'settings', 'profile'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Partial<SiteSettings>;
+        setSiteSettings(prev => {
+          const merged = { ...DEFAULT_SITE_SETTINGS, ...prev, ...data };
+          try {
+            localStorage.setItem('portfolio_site_settings', JSON.stringify(merged));
+          } catch (_) {}
+          return merged;
+        });
+      }
+    }, (err) => {
+      console.log("Using cached/default settings:", err);
+    });
+
     return () => {
       unsubscribeAuth();
       unsubscribeProjects();
+      unsubscribeSettings();
     };
   }, []);
+
+  const handleSaveSettings = async (updated: SiteSettings) => {
+    setIsSavingSettings(true);
+    try {
+      setSiteSettings(updated);
+      try {
+        localStorage.setItem('portfolio_site_settings', JSON.stringify(updated));
+      } catch (_) {}
+
+      await setDoc(doc(db, 'settings', 'profile'), updated, { merge: true });
+    } catch (err: any) {
+      console.error("Failed to save site settings to Firestore:", err);
+      // Even if Firestore rule blocks, local storage is updated so user sees immediate results!
+      throw err;
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    if (loginData.password !== DEFAULT_ADMIN_PASSWORD) {
-      setError("Incorrect admin password.");
-      setLoading(false);
-      return;
-    }
+    const email = loginData.email.trim();
+    const password = loginData.password;
 
     try {
-      await signInWithEmailAndPassword(auth, loginData.email, loginData.password);
+      let userCredential;
+      if (isRegisterMode) {
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
+      }
+      const loggedUser = userCredential.user;
+
+      // Check admin privileges: email matches or Firestore user doc has role 'admin'
+      let adminStatus = loggedUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+      if (!adminStatus) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', loggedUser.uid));
+          if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+            adminStatus = true;
+          }
+        } catch (docErr) {
+          console.error("Error checking admin role:", docErr);
+        }
+      }
+
+      if (!adminStatus) {
+        setError(`This account is not authorized as an administrator. Only ${ADMIN_EMAIL} can manage this portfolio.`);
+        await signOut(auth);
+        setLoading(false);
+        return;
+      }
+
+      setIsAdmin(true);
       setIsLoginModalOpen(false);
+      setIsRegisterMode(false);
       setLoginData({ email: '', password: '' });
       setError(null);
     } catch (err: any) {
-      console.error("Login failed", err);
-      if (err.code === 'auth/user-not-found') {
-        // Try to create the admin user if it doesn't exist (one-time bootstrap)
-        if (loginData.email === ADMIN_EMAIL && loginData.password === DEFAULT_ADMIN_PASSWORD) {
-          try {
-            await createUserWithEmailAndPassword(auth, loginData.email, loginData.password);
-            setIsLoginModalOpen(false);
-            setLoginData({ email: '', password: '' });
-            setError(null);
-            return;
-          } catch (createErr: any) {
-            setError(createErr.message);
-          }
-        } else {
-          setError("Invalid email or password.");
-        }
-      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError("Invalid email or password.");
+      console.error("Login/Auth failed:", err);
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        setError("Account not found or password incorrect. If this is your first time, click 'Create / Register Admin Account' below.");
+      } else if (err.code === 'auth/email-already-in-use') {
+        setError("This account already exists. Please switch to 'Sign In' and enter your password.");
+      } else if (err.code === 'auth/wrong-password') {
+        setError("Incorrect password. Please verify your admin password and try again.");
+      } else if (err.code === 'auth/weak-password') {
+        setError("Password should be at least 6 characters long.");
+      } else if (err.code === 'auth/too-many-requests') {
+        setError("Too many attempts. Please wait a moment and try again.");
+      } else if (err.code === 'auth/invalid-email') {
+        setError("Please enter a valid email address.");
       } else {
-        setError(err.message);
+        setError(err.message || "Authentication failed. Please check your credentials.");
       }
     } finally {
       setLoading(false);
@@ -467,6 +555,27 @@ function PortfolioApp() {
       await deleteDoc(doc(db, 'projects', id));
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, path);
+    }
+  };
+
+  const handleSaveProject = async (projectData: Omit<Project, 'id'>, id?: string) => {
+    if (!isAdmin) return;
+    const path = 'projects';
+    try {
+      if (id) {
+        await updateDoc(doc(db, path, id), {
+          ...projectData,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await addDoc(collection(db, path), {
+          ...projectData,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (err) {
+      handleFirestoreError(err, id ? OperationType.UPDATE : OperationType.CREATE, path);
+      throw err;
     }
   };
 
@@ -539,10 +648,10 @@ function PortfolioApp() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-display font-bold tracking-tight">
-                Shahriar Islam <span className="text-emerald-500">Ratul</span>
+                {siteSettings.fullName} <span className="text-emerald-500">{siteSettings.highlightName}</span>
               </h1>
               <p className="text-[11px] text-neutral-400 font-mono hidden sm:block">
-                Web Developer &amp; Prototyper
+                {siteSettings.statusBadge}
               </p>
             </div>
           </div>
@@ -568,7 +677,7 @@ function PortfolioApp() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 hover:bg-emerald-500/10 text-neutral-400 hover:text-emerald-400 rounded-lg transition-colors"
-                title="Chat on WhatsApp (+8801743904049)"
+                title={`Chat on WhatsApp (${WHATSAPP_NUMBER})`}
               >
                 <MessageCircle size={17} />
               </a>
@@ -592,30 +701,50 @@ function PortfolioApp() {
               </a>
             </div>
 
-            {isAdmin && (
+            {isAdmin ? (
+              <div className="flex items-center gap-2">
+                <button 
+                  id="admin-panel-btn"
+                  onClick={() => {
+                    setAdminPanelDefaultTab('projects');
+                    setIsAdminPanelOpen(true);
+                  }}
+                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-neutral-950 font-bold px-4 py-2 rounded-xl transition-all shadow-lg shadow-emerald-500/25 text-xs sm:text-sm active:scale-95 border border-emerald-300/40"
+                  title="Open Admin Panel"
+                >
+                  <ShieldCheck size={16} className="text-neutral-950 stroke-[2.5]" />
+                  <span>Admin Panel</span>
+                </button>
+
+                <div className="flex items-center gap-1.5 pl-1.5 border-l border-white/10">
+                  <div 
+                    className="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-400 font-bold border border-emerald-500/30 text-xs"
+                    title={`Logged in as ${user?.email || ADMIN_EMAIL}`}
+                  >
+                    {user?.email?.[0]?.toUpperCase() || 'A'}
+                  </div>
+                  <button 
+                    onClick={handleLogout}
+                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-neutral-400 hover:text-rose-400 transition-colors"
+                    title="Logout"
+                  >
+                    <LogOut size={16} />
+                  </button>
+                </div>
+              </div>
+            ) : (
               <button 
-                onClick={() => openModal()}
-                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-2 rounded-xl transition-all shadow-lg shadow-emerald-500/20 text-sm font-semibold"
+                onClick={() => {
+                  setError(null);
+                  setIsLoginModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-neutral-300 hover:text-emerald-400 border border-white/10 hover:border-emerald-500/30 px-3 py-1.5 rounded-xl transition-all text-xs font-semibold shadow-sm"
+                title="Admin Login & Portfolio Management"
               >
-                <Plus size={16} />
-                <span>Add Project</span>
+                <Lock size={13} className="text-emerald-400" />
+                <span>Admin Login</span>
               </button>
             )}
-            
-            {user ? (
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold border border-emerald-500/20 text-sm">
-                  {user.email?.[0].toUpperCase()}
-                </div>
-                <button 
-                  onClick={handleLogout}
-                  className="p-2 hover:bg-white/5 rounded-lg text-neutral-400 hover:text-white transition-colors"
-                  title="Logout"
-                >
-                  <LogOut size={18} />
-                </button>
-              </div>
-            ) : null}
           </div>
         </div>
       </nav>
@@ -653,18 +782,18 @@ function PortfolioApp() {
               {/* Status pill */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 glass rounded-full text-xs text-neutral-300 mb-6 border border-white/10">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Independent Web Developer &amp; Software Prototyper</span>
+                <span>{siteSettings.statusBadge}</span>
               </div>
 
               <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-bold tracking-tighter mb-6 leading-[1]">
-                Shahriar Islam <br className="hidden sm:inline" />
+                {siteSettings.fullName} <br className="hidden sm:inline" />
                 <motion.span 
                   initial={{ opacity: 0, x: -15 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3, duration: 0.7 }}
                   className="text-emerald-500"
                 >
-                  Ratul
+                  {siteSettings.highlightName}
                 </motion.span>
               </h1>
 
@@ -673,9 +802,9 @@ function PortfolioApp() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.8 }}
-                className="text-neutral-300 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 mb-8 leading-relaxed font-normal"
+                className="text-neutral-300 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 mb-8 leading-relaxed font-normal whitespace-pre-line"
               >
-                I am an independent web developer in the path of mastery of the art of modern software prototyping. Since 2025, I have been learning how to use Vibe coding and LLMs in the creation of web apps. I try to be fast in my prototyping by using my powers of thinking and prompting in tandem with my knowledge of web dev.
+                {siteSettings.biography}
               </motion.p>
 
               {/* Action buttons */}
@@ -729,7 +858,7 @@ function PortfolioApp() {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass text-xs text-neutral-300 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
                 >
                   <MessageCircle size={13} className="text-emerald-400" />
-                  <span>WhatsApp: {WHATSAPP_NUMBER}</span>
+                  <span>WhatsApp: {siteSettings.whatsappNumber}</span>
                 </a>
 
                 <a
@@ -765,7 +894,7 @@ function PortfolioApp() {
                   ) : (
                     <>
                       <Mail size={13} className="text-emerald-400" />
-                      <span>{ADMIN_EMAIL}</span>
+                      <span>{siteSettings.email}</span>
                     </>
                   )}
                 </button>
@@ -777,11 +906,12 @@ function PortfolioApp() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="lg:col-span-5 flex justify-center items-center"
+              className="lg:col-span-5 flex flex-col justify-center items-center"
             >
               <AnimatedProfilePhoto 
-                name="Shahriar Islam Ratul" 
-                title="Independent Web Developer & Software Prototyper" 
+                imageUrl={siteSettings.avatarUrl}
+                name={`${siteSettings.fullName} ${siteSettings.highlightName}`.trim()} 
+                title={siteSettings.statusBadge} 
               />
             </motion.div>
           </div>
@@ -797,9 +927,9 @@ function PortfolioApp() {
               <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-3 border border-emerald-500/20">
                 <Sparkles size={18} />
               </div>
-              <h2 className="text-sm font-bold text-white mb-1">Vibe Coding &amp; LLMs</h2>
+              <h2 className="text-sm font-bold text-white mb-1">{siteSettings.pillar1Title}</h2>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Leveraging LLMs and conversational coding since 2025 to synthesize web applications rapidly.
+                {siteSettings.pillar1Desc}
               </p>
             </div>
 
@@ -807,9 +937,9 @@ function PortfolioApp() {
               <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-3 border border-emerald-500/20">
                 <Zap size={18} />
               </div>
-              <h2 className="text-sm font-bold text-white mb-1">Rapid Prototyping</h2>
+              <h2 className="text-sm font-bold text-white mb-1">{siteSettings.pillar2Title}</h2>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Translating concepts into functional, interactive software prototypes with speed and agility.
+                {siteSettings.pillar2Desc}
               </p>
             </div>
 
@@ -817,9 +947,9 @@ function PortfolioApp() {
               <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-3 border border-emerald-500/20">
                 <Code2 size={18} />
               </div>
-              <h2 className="text-sm font-bold text-white mb-1">Thought &amp; Web Dev</h2>
+              <h2 className="text-sm font-bold text-white mb-1">{siteSettings.pillar3Title}</h2>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Combining structured prompting and creative thinking in tandem with modern web engineering.
+                {siteSettings.pillar3Desc}
               </p>
             </div>
           </motion.div>
@@ -847,12 +977,6 @@ function PortfolioApp() {
               <LayoutGrid size={14} className="text-emerald-500" />
               {displayProjects.length} Projects
             </div>
-            {isAdmin && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs text-emerald-400">
-                <Settings size={14} className="animate-spin-slow" />
-                Admin Mode
-              </div>
-            )}
           </div>
         </div>
 
@@ -962,7 +1086,16 @@ function PortfolioApp() {
         )}
 
         {/* Dedicated Contact Section */}
-        <ContactSection />
+        <ContactSection 
+          email={siteSettings.email}
+          phoneNumber={siteSettings.whatsappNumber}
+          whatsappRaw={siteSettings.whatsappRaw}
+          whatsappDefaultMsg={siteSettings.whatsappDefaultMsg}
+          facebookUrl={siteSettings.facebookUrl}
+          instagramUrl={siteSettings.instagramUrl}
+          heading={siteSettings.contactHeading}
+          subtitle={siteSettings.contactSubtitle}
+        />
       </main>
 
       {/* Admin Modal */}
@@ -1085,35 +1218,69 @@ function PortfolioApp() {
               className="relative w-full max-w-md glass rounded-3xl p-8 shadow-2xl"
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-display font-bold">Admin Login</h3>
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <Lock size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-display font-bold">
+                      {isRegisterMode ? 'Set Admin Password' : 'Admin Portal'}
+                    </h3>
+                    <p className="text-xs text-neutral-400">
+                      {isRegisterMode ? 'Register authorized admin account' : 'Firebase Authentication'}
+                    </p>
+                  </div>
+                </div>
                 <button 
-                  onClick={() => setIsLoginModalOpen(false)}
+                  onClick={() => {
+                    setIsLoginModalOpen(false);
+                    setError(null);
+                  }}
                   className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white transition-colors"
+                  aria-label="Close modal"
                 >
-                  <X size={24} />
+                  <X size={20} />
                 </button>
               </div>
 
+              {error && (
+                <div className="mb-4 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-2.5 text-rose-300 text-xs leading-relaxed">
+                  <AlertCircle size={16} className="text-rose-400 shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">Email</label>
+                  <div className="flex items-center justify-between mb-1.5 ml-1">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-neutral-400">Email</label>
+                    <button
+                      type="button"
+                      onClick={() => setLoginData(prev => ({ ...prev, email: ADMIN_EMAIL }))}
+                      className="text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors underline decoration-emerald-500/30"
+                    >
+                      Autofill {ADMIN_EMAIL}
+                    </button>
+                  </div>
                   <input 
                     required
                     type="email"
                     value={loginData.email}
                     onChange={e => setLoginData({...loginData, email: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors"
-                    placeholder="admin@example.com"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500/50 transition-colors text-sm"
+                    placeholder="shahriarislam275@gmail.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-1.5 ml-1">Password</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1.5 ml-1">
+                    {isRegisterMode ? 'Create Password (6+ chars)' : 'Password'}
+                  </label>
                   <input 
                     required
                     type="password"
                     value={loginData.password}
                     onChange={e => setLoginData({...loginData, password: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500/50 transition-colors text-sm"
                     placeholder="••••••••"
                   />
                 </div>
@@ -1121,22 +1288,73 @@ function PortfolioApp() {
                 <button 
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 mt-4 disabled:opacity-50"
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 mt-2 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
-                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                   ) : (
-                    "Login"
+                    <>
+                      <LogIn size={18} />
+                      <span>{isRegisterMode ? 'Create & Sign In as Admin' : 'Sign In as Admin'}</span>
+                    </>
                   )}
                 </button>
-                <p className="text-center text-xs text-neutral-500">
-                  Authorized access only.
+
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRegisterMode(!isRegisterMode);
+                      setError(null);
+                    }}
+                    className="text-xs text-neutral-400 hover:text-emerald-400 transition-colors"
+                  >
+                    {isRegisterMode 
+                      ? 'Already have an admin password? Click here to Sign In' 
+                      : "First time or need to set password? Click to Create Admin Password"}
+                  </button>
+                </div>
+
+                <p className="text-center text-[11px] text-neutral-500 pt-1">
+                  Protected with Firebase Authentication. Authorized for {ADMIN_EMAIL}.
                 </p>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* Professional Full Admin Panel Dashboard */}
+      <AdminPanel 
+        isOpen={isAdminPanelOpen}
+        onClose={() => setIsAdminPanelOpen(false)}
+        adminEmail={user?.email || ADMIN_EMAIL}
+        projects={projects}
+        onAddProject={() => {
+          setIsAdminPanelOpen(false);
+          openModal();
+        }}
+        onEditProject={(project) => {
+          setIsAdminPanelOpen(false);
+          openModal(project);
+        }}
+        onDeleteProject={handleDelete}
+        onSaveProject={handleSaveProject}
+        siteSettings={siteSettings}
+        onSaveSiteSettings={handleSaveSettings}
+        isSavingSettings={isSavingSettings}
+        onLogout={handleLogout}
+        defaultTab={adminPanelDefaultTab}
+      />
+
+      {/* Standalone Website Details & Profile Settings Modal */}
+      <SiteSettingsModal 
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        settings={siteSettings}
+        onSave={handleSaveSettings}
+        isSaving={isSavingSettings}
+      />
 
       {/* Footer */}
       <footer className="py-12 border-t border-white/5 text-center px-6">
@@ -1182,12 +1400,23 @@ function PortfolioApp() {
           </div>
 
           <motion.p 
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setSecretClickCount(prev => prev + 1)}
-            className="text-neutral-500 text-xs sm:text-sm cursor-default select-none"
-            title="Shahriar Islam Ratul"
+            id="admin-access-trigger"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              if (isAdmin) {
+                setAdminPanelDefaultTab('projects');
+                setIsAdminPanelOpen(true);
+              } else {
+                setError(null);
+                setIsLoginModalOpen(true);
+              }
+            }}
+            className="text-neutral-500 hover:text-emerald-400 text-xs sm:text-sm cursor-pointer select-none transition-all duration-200 inline-flex items-center gap-2 py-1.5 px-3.5 rounded-full hover:bg-white/5 border border-transparent hover:border-emerald-500/20 group"
+            title={isAdmin ? "Admin Active: Click to open Professional Admin Panel" : "Click to open Admin Login"}
           >
-            © {new Date().getFullYear()} Shahriar Islam Ratul. Built with passion &amp; Vibe coding.
+            <span>© {new Date().getFullYear()} Shahriar Islam Ratul. Built with passion &amp; Vibe coding.</span>
+            <Lock size={12} className={cn("transition-colors", isAdmin ? "text-emerald-400" : "text-neutral-600 group-hover:text-emerald-400/80")} />
           </motion.p>
         </div>
       </footer>
