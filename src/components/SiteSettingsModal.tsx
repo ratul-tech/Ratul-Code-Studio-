@@ -39,12 +39,14 @@ export function SiteSettingsModal({
   const [imgError, setImgError] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isResetConfirm, setIsResetConfirm] = useState(false);
 
   useEffect(() => {
     setFormData(settings);
     setImgError(false);
     setSaveSuccess(false);
     setErrorMessage(null);
+    setIsResetConfirm(false);
   }, [settings, isOpen]);
 
   if (!isOpen) return null;
@@ -64,10 +66,9 @@ export function SiteSettingsModal({
   };
 
   const handleReset = () => {
-    if (window.confirm("Are you sure you want to reset all website details and photo back to defaults?")) {
-      setFormData(DEFAULT_SITE_SETTINGS);
-      setImgError(false);
-    }
+    setFormData(DEFAULT_SITE_SETTINGS);
+    setImgError(false);
+    setIsResetConfirm(false);
   };
 
   const activePhotoSrc = formData.avatarUrl && formData.avatarUrl.trim() && !imgError
@@ -507,14 +508,34 @@ export function SiteSettingsModal({
 
             {/* Bottom Actions */}
             <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={handleReset}
-                className="inline-flex items-center gap-2 text-xs text-neutral-400 hover:text-white px-3 py-2 rounded-xl hover:bg-white/5 transition-colors order-2 sm:order-1"
-              >
-                <RotateCcw size={14} />
-                <span>Reset to Defaults</span>
-              </button>
+              {isResetConfirm ? (
+                <div className="flex items-center gap-1.5 p-1 bg-amber-500/10 border border-amber-500/30 rounded-xl order-2 sm:order-1">
+                  <span className="text-[11px] text-amber-300 font-medium px-1">Reset all?</span>
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg transition-colors"
+                  >
+                    Yes, Reset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsResetConfirm(false)}
+                    className="px-2 py-1 text-xs text-neutral-400 hover:text-white transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsResetConfirm(true)}
+                  className="inline-flex items-center gap-2 text-xs text-neutral-400 hover:text-white px-3 py-2 rounded-xl hover:bg-white/5 transition-colors order-2 sm:order-1"
+                >
+                  <RotateCcw size={14} />
+                  <span>Reset to Defaults</span>
+                </button>
+              )}
 
               <div className="flex items-center gap-3 w-full sm:w-auto order-1 sm:order-2">
                 <button

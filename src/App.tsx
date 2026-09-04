@@ -340,6 +340,8 @@ function PortfolioApp() {
   const [adminPanelDefaultTab, setAdminPanelDefaultTab] = useState<'projects' | 'website' | 'overview'>('projects');
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [cardDeleteConfirmId, setCardDeleteConfirmId] = useState<string | null>(null);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
 
   const ADMIN_EMAIL = "shahriarislam275@gmail.com";
   const WHATSAPP_RAW = siteSettings.whatsappRaw || "8801743904049";
@@ -549,12 +551,28 @@ function PortfolioApp() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!isAdmin || !window.confirm("Are you sure you want to delete this project?")) return;
-    const path = `projects/${id}`;
+    if (!isAdmin) return;
+    setDeletingProjectId(id);
     try {
-      await deleteDoc(doc(db, 'projects', id));
+      if (id.startsWith('prototype-')) {
+        // If deleting an initial demo prototype, seed remaining ones to Firestore so the deletion persists
+        const remaining = DEFAULT_PROJECTS.filter(p => p.id !== id);
+        for (const p of remaining) {
+          const { id: _, ...data } = p;
+          await addDoc(collection(db, 'projects'), {
+            ...data,
+            createdAt: serverTimestamp()
+          });
+        }
+      } else {
+        const path = `projects/${id}`;
+        await deleteDoc(doc(db, 'projects', id));
+      }
+      setCardDeleteConfirmId(null);
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, path);
+      handleFirestoreError(err, OperationType.DELETE, `projects/${id}`);
+    } finally {
+      setDeletingProjectId(null);
     }
   };
 
@@ -606,6 +624,22 @@ function PortfolioApp() {
     setIsModalOpen(false);
     setEditingProject(null);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.altKey && (e.key === 'a' || e.key === 'A')) || (e.ctrlKey && e.shiftKey && (e.key === 'a' || e.key === 'A'))) {
+        e.preventDefault();
+        if (isAdmin) {
+          setIsAdminPanelOpen(prev => !prev);
+        } else {
+          setError(null);
+          setIsLoginModalOpen(prev => !prev);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAdmin]);
 
   if (loading) {
     return (
@@ -701,7 +735,7 @@ function PortfolioApp() {
               </a>
             </div>
 
-            {isAdmin ? (
+            {isAdmin && (
               <div className="flex items-center gap-2">
                 <button 
                   id="admin-panel-btn"
@@ -732,18 +766,6 @@ function PortfolioApp() {
                   </button>
                 </div>
               </div>
-            ) : (
-              <button 
-                onClick={() => {
-                  setError(null);
-                  setIsLoginModalOpen(true);
-                }}
-                className="flex items-center gap-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-neutral-300 hover:text-emerald-400 border border-white/10 hover:border-emerald-500/30 px-3 py-1.5 rounded-xl transition-all text-xs font-semibold shadow-sm"
-                title="Admin Login & Portfolio Management"
-              >
-                <Lock size={13} className="text-emerald-400" />
-                <span>Admin Login</span>
-              </button>
             )}
           </div>
         </div>
@@ -1026,22 +1048,51 @@ function PortfolioApp() {
                 </div>
 
                 <div className="p-6 flex-1 flex flex-col">
-                  <div className="flex justify-between items-start mb-3">
+                  <div className="flex justify-between items-start mb-3 gap-2">
                     <h3 className="text-xl font-bold font-display">{project.title}</h3>
-                    {isAdmin && project.id && !project.id.startsWith('prototype-') && (
-                      <div className="flex gap-2">
+                    {isAdmin && project.id && (
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button 
                           onClick={() => openModal(project)}
                           className="p-1.5 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-emerald-400 transition-colors"
+                          title="Edit Project"
                         >
                           <Edit3 size={16} />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(project.id!)}
-                          className="p-1.5 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-red-400 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {cardDeleteConfirmId === project.id ? (
+                          <div className="flex items-center gap-1 bg-rose-500/15 border border-rose-500/40 rounded-lg p-1 animate-in fade-in duration-150">
+                            <span className="text-[11px] text-rose-300 font-semibold px-1">Delete?</span>
+                            <button 
+                              type="button"
+                              onClick={() => handleDelete(project.id!)}
+                              disabled={deletingProjectId === project.id}
+                              className="px-2.5 py-0.5 bg-rose-600 hover:bg-rose-500 text-white rounded-md text-xs font-bold transition-colors disabled:opacity-50 flex items-center justify-center min-w-[38px] shadow-sm"
+                            >
+                              {deletingProjectId === project.id ? (
+                                <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                              ) : (
+                                'Yes'
+                              )}
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => setCardDeleteConfirmId(null)}
+                              className="px-1.5 py-0.5 text-neutral-400 hover:text-white rounded text-xs transition-colors"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button 
+                            type="button"
+                            onClick={() => setCardDeleteConfirmId(project.id!)}
+                            className="p-1.5 hover:bg-rose-500/15 rounded-lg text-neutral-400 hover:text-rose-400 border border-transparent hover:border-rose-500/30 transition-all active:scale-95"
+                            title="Delete Project"
+                            aria-label="Delete project"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

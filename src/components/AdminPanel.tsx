@@ -80,6 +80,7 @@ export function AdminPanel({
   });
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [projectImgError, setProjectImgError] = useState(false);
+  const [isResetConfirm, setIsResetConfirm] = useState(false);
 
   useEffect(() => {
     setSiteForm(siteSettings);
@@ -111,10 +112,9 @@ export function AdminPanel({
   };
 
   const handleResetDefaults = () => {
-    if (window.confirm("Are you sure you want to reset all website text & settings to defaults?")) {
-      setSiteForm(DEFAULT_SITE_SETTINGS);
-      setImgError(false);
-    }
+    setSiteForm(DEFAULT_SITE_SETTINGS);
+    setImgError(false);
+    setIsResetConfirm(false);
   };
 
   const handleOpenAddProject = () => {
@@ -657,14 +657,34 @@ export function AdminPanel({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleResetDefaults}
-                      className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white px-3 py-2 rounded-xl hover:bg-white/5 transition-colors border border-white/5"
-                    >
-                      <RotateCcw size={13} />
-                      <span>Reset Defaults</span>
-                    </button>
+                    {isResetConfirm ? (
+                      <div className="flex items-center gap-1.5 p-1 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                        <span className="text-[11px] text-amber-300 font-medium px-1">Reset all?</span>
+                        <button
+                          type="button"
+                          onClick={handleResetDefaults}
+                          className="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg transition-colors"
+                        >
+                          Yes, Reset
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsResetConfirm(false)}
+                          className="px-2 py-1 text-xs text-neutral-400 hover:text-white transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsResetConfirm(true)}
+                        className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white px-3 py-2 rounded-xl hover:bg-white/5 transition-colors border border-white/5"
+                      >
+                        <RotateCcw size={13} />
+                        <span>Reset Defaults</span>
+                      </button>
+                    )}
                     <button
                       type="submit"
                       disabled={isSavingSettings}
