@@ -28,8 +28,10 @@ import {
   Eye, 
   Database,
   Layers,
-  Code2
+  Code2,
+  Maximize2
 } from 'lucide-react';
+import { cn } from '../lib/utils';
 import { Project, SiteSettings, DEFAULT_SITE_SETTINGS } from '../types';
 import profilePhoto from '../assets/images/ratul_profile.jpg';
 
@@ -80,10 +82,12 @@ export function AdminPanel({
     description: '',
     imageUrl: '',
     techStack: '',
-    demoUrl: ''
+    demoUrl: '',
+    aspectRatioMode: 'responsive' as 'responsive' | 'contain' | 'cover'
   });
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [projectImgError, setProjectImgError] = useState(false);
+  const [detectedRatio, setDetectedRatio] = useState<string | null>(null);
   const [isResetConfirm, setIsResetConfirm] = useState(false);
 
   useEffect(() => {
@@ -128,9 +132,11 @@ export function AdminPanel({
       description: '',
       imageUrl: '',
       techStack: '',
-      demoUrl: ''
+      demoUrl: '',
+      aspectRatioMode: 'responsive'
     });
     setProjectImgError(false);
+    setDetectedRatio(null);
     setProjectEditorMode('form');
   };
 
@@ -141,9 +147,11 @@ export function AdminPanel({
       description: project.description,
       imageUrl: project.imageUrl,
       techStack: project.techStack || '',
-      demoUrl: project.demoUrl || ''
+      demoUrl: project.demoUrl || '',
+      aspectRatioMode: project.aspectRatioMode || 'responsive'
     });
     setProjectImgError(false);
+    setDetectedRatio(null);
     setProjectEditorMode('form');
   };
 
@@ -422,9 +430,14 @@ export function AdminPanel({
                         </div>
 
                         <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                            Cover Image URL *
-                          </label>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400">
+                              Cover Image URL *
+                            </label>
+                            <span className="text-[10px] text-emerald-400 font-mono">
+                              Any Aspect Ratio Supported
+                            </span>
+                          </div>
                           <input
                             required
                             type="url"
@@ -436,6 +449,54 @@ export function AdminPanel({
                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500/50 transition-colors text-sm"
                             placeholder="https://images.unsplash.com/... or direct image link"
                           />
+                          <p className="text-[11px] text-neutral-500 mt-1">
+                            Paste any image link: Portrait (9:16 mobile mockups), Square (1:1), 4:3, or Landscape (16:9). The card dynamically adjusts!
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5 flex items-center justify-between">
+                            <span>Photo Aspect Ratio Mode</span>
+                            <span className="text-[10px] text-emerald-400 font-normal">Auto responsive</span>
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setProjectFormData({ ...projectFormData, aspectRatioMode: 'responsive' })}
+                              className={cn(
+                                "px-2.5 py-2 rounded-xl text-xs font-medium border text-center transition-all",
+                                (!projectFormData.aspectRatioMode || projectFormData.aspectRatioMode === 'responsive')
+                                  ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm"
+                                  : "bg-white/5 border-white/10 text-neutral-400 hover:text-white"
+                              )}
+                            >
+                              ⚡ Responsive (Auto)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setProjectFormData({ ...projectFormData, aspectRatioMode: 'contain' })}
+                              className={cn(
+                                "px-2.5 py-2 rounded-xl text-xs font-medium border text-center transition-all",
+                                projectFormData.aspectRatioMode === 'contain'
+                                  ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm"
+                                  : "bg-white/5 border-white/10 text-neutral-400 hover:text-white"
+                              )}
+                            >
+                              🔍 Contain (No Crop)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setProjectFormData({ ...projectFormData, aspectRatioMode: 'cover' })}
+                              className={cn(
+                                "px-2.5 py-2 rounded-xl text-xs font-medium border text-center transition-all",
+                                projectFormData.aspectRatioMode === 'cover'
+                                  ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm"
+                                  : "bg-white/5 border-white/10 text-neutral-400 hover:text-white"
+                              )}
+                            >
+                              📐 16:9 Cover
+                            </button>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -470,20 +531,53 @@ export function AdminPanel({
 
                       {/* Right column: Card Preview */}
                       <div className="lg:col-span-5 space-y-3">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                          Live Card Preview
-                        </label>
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400">
+                            Live Card Preview
+                          </label>
+                          {detectedRatio && (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 truncate max-w-[200px]">
+                              {detectedRatio}
+                            </span>
+                          )}
+                        </div>
+
                         <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col space-y-3">
-                          <div className="relative aspect-video rounded-xl overflow-hidden bg-neutral-800 border border-white/10">
+                          <div className="relative rounded-xl overflow-hidden bg-neutral-900 border border-white/10 flex items-center justify-center min-h-[160px] max-h-[460px]">
                             {projectFormData.imageUrl && !projectImgError ? (
-                              <img
-                                src={projectFormData.imageUrl}
-                                alt="Preview"
-                                className="w-full h-full object-cover"
-                                onError={() => setProjectImgError(true)}
-                              />
+                              <>
+                                <div 
+                                  className="absolute inset-0 bg-cover bg-center filter blur-xl opacity-25 scale-125 pointer-events-none"
+                                  style={{ backgroundImage: `url(${projectFormData.imageUrl})` }}
+                                />
+                                <img
+                                  src={projectFormData.imageUrl}
+                                  alt="Preview"
+                                  className={cn(
+                                    "relative w-full h-auto block transition-all",
+                                    projectFormData.aspectRatioMode === 'contain'
+                                      ? "max-h-[380px] object-contain"
+                                      : projectFormData.aspectRatioMode === 'cover'
+                                      ? "aspect-video object-cover"
+                                      : "max-h-[440px] object-cover"
+                                  )}
+                                  onLoad={(e) => {
+                                    const img = e.currentTarget;
+                                    if (img.naturalWidth && img.naturalHeight) {
+                                      const ratio = (img.naturalWidth / img.naturalHeight).toFixed(2);
+                                      let label = `${img.naturalWidth}×${img.naturalHeight}`;
+                                      if (Math.abs(Number(ratio) - 1.78) < 0.15) label += " (16:9 Landscape)";
+                                      else if (Math.abs(Number(ratio) - 1.33) < 0.15) label += " (4:3 Standard)";
+                                      else if (Math.abs(Number(ratio) - 1.0) < 0.15) label += " (1:1 Square)";
+                                      else if (Number(ratio) < 0.8) label += " (Portrait Mockup)";
+                                      setDetectedRatio(label);
+                                    }
+                                  }}
+                                  onError={() => setProjectImgError(true)}
+                                />
+                              </>
                             ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center text-neutral-500 text-xs">
+                              <div className="w-full h-36 flex flex-col items-center justify-center text-neutral-500 text-xs">
                                 <ImageIcon size={28} className="mb-2 opacity-50" />
                                 <span>Image preview will appear here</span>
                               </div>

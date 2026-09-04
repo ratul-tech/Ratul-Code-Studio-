@@ -5,6 +5,7 @@ export interface Project {
   imageUrl: string;
   techStack: string;
   demoUrl: string;
+  aspectRatioMode?: 'responsive' | 'contain' | 'cover';
   createdAt: any;
 }
 

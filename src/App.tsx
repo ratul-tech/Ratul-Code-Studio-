@@ -54,7 +54,10 @@ import {
   FolderGit2,
   Globe,
   LayoutDashboard,
-  Eye
+  Eye,
+  Maximize2,
+  Columns,
+  Grid
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -343,8 +346,12 @@ function PortfolioApp() {
     description: '',
     imageUrl: '',
     techStack: '',
-    demoUrl: ''
+    demoUrl: '',
+    aspectRatioMode: 'responsive' as 'responsive' | 'contain' | 'cover'
   });
+
+  const [viewingPhoto, setViewingPhoto] = useState<{ url: string; title: string } | null>(null);
+  const [projectsLayout, setProjectsLayout] = useState<'masonry' | 'grid'>('masonry');
 
   const [loginData, setLoginData] = useState({
     email: '',
@@ -739,7 +746,8 @@ function PortfolioApp() {
         description: project.description,
         imageUrl: project.imageUrl,
         techStack: project.techStack,
-        demoUrl: project.demoUrl
+        demoUrl: project.demoUrl,
+        aspectRatioMode: project.aspectRatioMode || 'responsive'
       });
     } else {
       setEditingProject(null);
@@ -748,7 +756,8 @@ function PortfolioApp() {
         description: '',
         imageUrl: '',
         techStack: '',
-        demoUrl: ''
+        demoUrl: '',
+        aspectRatioMode: 'responsive'
       });
     }
     setIsModalOpen(true);
