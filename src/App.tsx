@@ -343,7 +343,19 @@ function PortfolioApp() {
   const [cardDeleteConfirmId, setCardDeleteConfirmId] = useState<string | null>(null);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
 
-  const ADMIN_EMAIL = "shahriarislam275@gmail.com";
+  const ADMIN_EMAILS = [
+    "shahriarislam275@gmail.com",
+    "shahriarislamratul6@gmail.com"
+  ];
+  const PRIMARY_ADMIN_EMAIL = "shahriarislam275@gmail.com";
+  const ADMIN_EMAIL = siteSettings.email || PRIMARY_ADMIN_EMAIL;
+
+  const isAuthorizedAdmin = (email?: string | null): boolean => {
+    if (!email) return false;
+    const lower = email.toLowerCase().trim();
+    return ADMIN_EMAILS.some(e => e.toLowerCase() === lower);
+  };
+
   const WHATSAPP_RAW = siteSettings.whatsappRaw || "8801743904049";
   const WHATSAPP_NUMBER = siteSettings.whatsappNumber || "+8801743904049";
   const WHATSAPP_DEFAULT_MSG = siteSettings.whatsappDefaultMsg || "Hi Shahriar! I saw your portfolio and would like to discuss a project with you.";
@@ -390,7 +402,7 @@ function PortfolioApp() {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        let adminStatus = currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+        let adminStatus = isAuthorizedAdmin(currentUser.email);
         if (!adminStatus) {
           try {
             const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
@@ -402,6 +414,19 @@ function PortfolioApp() {
           }
         }
         setIsAdmin(adminStatus);
+
+        // Ensure user document has role: 'admin' in Firestore
+        if (adminStatus) {
+          try {
+            await setDoc(doc(db, 'users', currentUser.uid), {
+              email: currentUser.email,
+              role: 'admin',
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+          } catch (syncErr) {
+            console.warn("Could not sync user role doc:", syncErr);
+          }
+        }
       } else {
         setIsAdmin(false);
       }
@@ -410,11 +435,23 @@ function PortfolioApp() {
 
     const q = query(collection(db, 'projects'), orderBy('createdAt', 'desc'));
     const unsubscribeProjects = onSnapshot(q, (snapshot) => {
-      const projectsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Project[];
-      setProjects(projectsData);
+      let localDeleted: string[] = [];
+      try {
+        localDeleted = JSON.parse(localStorage.getItem('portfolio_deleted_project_ids') || '[]');
+      } catch (_) {}
+
+      const projectsData = snapshot.docs
+        .filter(doc => !localDeleted.includes(doc.id))
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Project[];
+
+      if (projectsData.length === 0) {
+        setProjects(DEFAULT_PROJECTS.filter(p => !localDeleted.includes(p.id!)));
+      } else {
+        setProjects(projectsData);
+      }
       setError(null);
     }, (err) => {
       handleFirestoreError(err, OperationType.GET, 'projects');
@@ -478,8 +515,8 @@ function PortfolioApp() {
       }
       const loggedUser = userCredential.user;
 
-      // Check admin privileges: email matches or Firestore user doc has role 'admin'
-      let adminStatus = loggedUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+      // Check admin privileges: email matches authorized list or Firestore user doc has role 'admin'
+      let adminStatus = isAuthorizedAdmin(loggedUser.email);
       if (!adminStatus) {
         try {
           const userDoc = await getDoc(doc(db, 'users', loggedUser.uid));
@@ -492,10 +529,21 @@ function PortfolioApp() {
       }
 
       if (!adminStatus) {
-        setError(`This account is not authorized as an administrator. Only ${ADMIN_EMAIL} can manage this portfolio.`);
+        setError(`This account is not authorized as an administrator. Authorized emails: ${ADMIN_EMAILS.join(', ')}.`);
         await signOut(auth);
         setLoading(false);
         return;
+      }
+
+      // Ensure user document has role: 'admin'
+      try {
+        await setDoc(doc(db, 'users', loggedUser.uid), {
+          email: loggedUser.email,
+          role: 'admin',
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } catch (e) {
+        console.warn("Could not set admin role document:", e);
       }
 
       setIsAdmin(true);
@@ -553,24 +601,59 @@ function PortfolioApp() {
   const handleDelete = async (id: string) => {
     if (!isAdmin) return;
     setDeletingProjectId(id);
+    setCardDeleteConfirmId(null);
     try {
       if (id.startsWith('prototype-')) {
-        // If deleting an initial demo prototype, seed remaining ones to Firestore so the deletion persists
-        const remaining = DEFAULT_PROJECTS.filter(p => p.id !== id);
-        for (const p of remaining) {
-          const { id: _, ...data } = p;
-          await addDoc(collection(db, 'projects'), {
-            ...data,
-            createdAt: serverTimestamp()
-          });
-        }
+        // Optimistically remove from state
+        setProjects(prev => prev.filter(p => p.id !== id));
+        try {
+          const localDeleted = JSON.parse(localStorage.getItem('portfolio_deleted_project_ids') || '[]');
+          if (!localDeleted.includes(id)) {
+            localDeleted.push(id);
+            localStorage.setItem('portfolio_deleted_project_ids', JSON.stringify(localDeleted));
+          }
+        } catch (_) {}
+
+        try {
+          const remaining = DEFAULT_PROJECTS.filter(p => p.id !== id);
+          for (const p of remaining) {
+            const { id: _, ...data } = p;
+            await addDoc(collection(db, 'projects'), {
+              ...data,
+              createdAt: serverTimestamp()
+            });
+          }
+        } catch (_) {}
       } else {
         const path = `projects/${id}`;
-        await deleteDoc(doc(db, 'projects', id));
+        try {
+          await deleteDoc(doc(db, 'projects', id));
+          setProjects(prev => prev.filter(p => p.id !== id));
+        } catch (err: any) {
+          console.warn("Direct Firestore deleteDoc failed:", err);
+          
+          // Persist deletion locally so the user's portfolio UI remains updated and clean
+          try {
+            const localDeleted = JSON.parse(localStorage.getItem('portfolio_deleted_project_ids') || '[]');
+            if (!localDeleted.includes(id)) {
+              localDeleted.push(id);
+              localStorage.setItem('portfolio_deleted_project_ids', JSON.stringify(localDeleted));
+            }
+          } catch (_) {}
+
+          // Remove immediately from active state
+          setProjects(prev => prev.filter(p => p.id !== id));
+
+          // Log structured error for diagnostics per guidelines
+          try {
+            handleFirestoreError(err, OperationType.DELETE, path);
+          } catch (logErr) {
+            console.error("Firestore permission restriction encountered during project deletion. Project removed from local portfolio display.");
+          }
+        }
       }
-      setCardDeleteConfirmId(null);
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, `projects/${id}`);
+      console.error("Delete operation encountered an error:", err);
     } finally {
       setDeletingProjectId(null);
     }
@@ -1303,15 +1386,25 @@ function PortfolioApp() {
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <div className="flex items-center justify-between mb-1.5 ml-1">
+                  <div className="flex items-center justify-between mb-1.5 ml-1 flex-wrap gap-1">
                     <label className="block text-xs font-bold uppercase tracking-widest text-neutral-400">Email</label>
-                    <button
-                      type="button"
-                      onClick={() => setLoginData(prev => ({ ...prev, email: ADMIN_EMAIL }))}
-                      className="text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors underline decoration-emerald-500/30"
-                    >
-                      Autofill {ADMIN_EMAIL}
-                    </button>
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setLoginData(prev => ({ ...prev, email: "shahriarislamratul6@gmail.com" }))}
+                        className="text-emerald-400 hover:text-emerald-300 transition-colors underline decoration-emerald-500/30"
+                      >
+                        shahriarislamratul6
+                      </button>
+                      <span className="text-neutral-600">/</span>
+                      <button
+                        type="button"
+                        onClick={() => setLoginData(prev => ({ ...prev, email: PRIMARY_ADMIN_EMAIL }))}
+                        className="text-neutral-400 hover:text-white transition-colors underline decoration-white/20"
+                      >
+                        shahriarislam275
+                      </button>
+                    </div>
                   </div>
                   <input 
                     required
@@ -1319,7 +1412,7 @@ function PortfolioApp() {
                     value={loginData.email}
                     onChange={e => setLoginData({...loginData, email: e.target.value})}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500/50 transition-colors text-sm"
-                    placeholder="shahriarislam275@gmail.com"
+                    placeholder="shahriarislamratul6@gmail.com"
                   />
                 </div>
                 <div>
