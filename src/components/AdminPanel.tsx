@@ -21,6 +21,10 @@ import {
   User, 
   Phone, 
   MessageCircle, 
+  Mail,
+  Facebook,
+  Instagram,
+  Send,
   Eye, 
   Database,
   Layers,
@@ -42,7 +46,7 @@ interface AdminPanelProps {
   onSaveSiteSettings: (updated: SiteSettings) => Promise<void>;
   isSavingSettings: boolean;
   onLogout: () => void;
-  defaultTab?: 'projects' | 'website' | 'overview';
+  defaultTab?: 'projects' | 'contact' | 'website' | 'overview';
 }
 
 export function AdminPanel({
@@ -60,7 +64,7 @@ export function AdminPanel({
   onLogout,
   defaultTab = 'projects'
 }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<'projects' | 'website' | 'overview'>(defaultTab);
+  const [activeTab, setActiveTab] = useState<'projects' | 'contact' | 'website' | 'overview'>(defaultTab);
   const [siteForm, setSiteForm] = useState<SiteSettings>(siteSettings);
   const [websiteSubTab, setWebsiteSubTab] = useState<'profile' | 'contact' | 'pillars'>('profile');
   const [imgError, setImgError] = useState(false);
@@ -264,6 +268,19 @@ export function AdminPanel({
                 <span className="ml-1 text-[11px] px-1.5 py-0.2 rounded-full bg-black/20 text-white">
                   {projects.length}
                 </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('contact')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                  activeTab === 'contact'
+                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <MessageCircle size={16} />
+                <span>Contact Section</span>
               </button>
 
               <button
@@ -854,7 +871,7 @@ export function AdminPanel({
                         required
                         value={siteForm.biography}
                         onChange={(e) => setSiteForm({ ...siteForm, biography: e.target.value })}
-                        placeholder="Your story, vibe coding experience, and rapid prototyping journey..."
+                        placeholder="Your story, development experience, and rapid prototyping journey..."
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 leading-relaxed resize-none"
                       />
                     </div>
@@ -863,117 +880,265 @@ export function AdminPanel({
 
                 {/* SECTION 2: CONTACTS & SOCIALS */}
                 {websiteSubTab === 'contact' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                          Email Address
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          value={siteForm.email}
-                          onChange={(e) => setSiteForm({ ...siteForm, email: e.target.value })}
-                          placeholder="shahriarislam275@gmail.com"
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
-                        />
+                  <div className="space-y-5">
+                    {/* Section Header */}
+                    <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3.5">
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                        <Sparkles size={14} />
+                        Section Header &amp; Top Badge
+                      </span>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                            Contact Section Heading
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={siteForm.contactHeading}
+                            onChange={(e) => setSiteForm({ ...siteForm, contactHeading: e.target.value })}
+                            placeholder="Get In Touch"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 font-semibold"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                            Top Pill Banner Text
+                          </label>
+                          <input
+                            type="text"
+                            value={siteForm.contactBadgeText || ''}
+                            onChange={(e) => setSiteForm({ ...siteForm, contactBadgeText: e.target.value })}
+                            placeholder="Let's Build Together"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                          />
+                        </div>
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                          WhatsApp Display Number
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={siteForm.whatsappNumber}
-                          onChange={(e) => setSiteForm({ ...siteForm, whatsappNumber: e.target.value })}
-                          placeholder="+8801743904049"
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                          WhatsApp Direct Digits (wa.me)
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={siteForm.whatsappRaw}
-                          onChange={(e) => setSiteForm({ ...siteForm, whatsappRaw: e.target.value })}
-                          placeholder="8801743904049"
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 font-mono text-xs"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                          Facebook Profile Link
-                        </label>
-                        <input
-                          type="url"
-                          value={siteForm.facebookUrl}
-                          onChange={(e) => setSiteForm({ ...siteForm, facebookUrl: e.target.value })}
-                          placeholder="https://www.facebook.com/shahriar.islam.ratul.00"
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                        Instagram Profile Link
-                      </label>
-                      <input
-                        type="url"
-                        value={siteForm.instagramUrl}
-                        onChange={(e) => setSiteForm({ ...siteForm, instagramUrl: e.target.value })}
-                        placeholder="https://www.instagram.com/shahriar_islam_ratul/"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                        WhatsApp Pre-Filled Greeting Message
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={siteForm.whatsappDefaultMsg}
-                        onChange={(e) => setSiteForm({ ...siteForm, whatsappDefaultMsg: e.target.value })}
-                        placeholder="Hi Shahriar! I saw your portfolio and would like to discuss a project with you."
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 resize-none"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                          Contact Section Heading
-                        </label>
-                        <input
-                          type="text"
-                          value={siteForm.contactHeading}
-                          onChange={(e) => setSiteForm({ ...siteForm, contactHeading: e.target.value })}
-                          placeholder="Get In Touch"
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
+                        <label className="block text-xs font-bold text-neutral-400 mb-1.5">
                           Contact Section Subtitle
                         </label>
-                        <input
-                          type="text"
+                        <textarea
+                          rows={2}
                           value={siteForm.contactSubtitle}
                           onChange={(e) => setSiteForm({ ...siteForm, contactSubtitle: e.target.value })}
                           placeholder="Have an idea, need a rapid prototype, or want to collaborate? Reach out..."
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 resize-none"
                         />
+                      </div>
+                    </div>
+
+                    {/* WhatsApp */}
+                    <div className="p-4 rounded-2xl bg-white/[0.02] border border-emerald-500/20 space-y-3.5">
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                        <MessageCircle size={14} />
+                        WhatsApp Settings
+                      </span>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                            Display Phone Number
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={siteForm.whatsappNumber}
+                            onChange={(e) => setSiteForm({ ...siteForm, whatsappNumber: e.target.value })}
+                            placeholder="+8801743904049"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                            Direct Digits for wa.me link
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={siteForm.whatsappRaw}
+                            onChange={(e) => setSiteForm({ ...siteForm, whatsappRaw: e.target.value })}
+                            placeholder="8801743904049"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 font-mono text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                            WhatsApp Subtitle
+                          </label>
+                          <input
+                            type="text"
+                            value={siteForm.whatsappSubtitle || ''}
+                            onChange={(e) => setSiteForm({ ...siteForm, whatsappSubtitle: e.target.value })}
+                            placeholder="Click to start chat with default message"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                            WhatsApp Description
+                          </label>
+                          <input
+                            type="text"
+                            value={siteForm.whatsappDescription || ''}
+                            onChange={(e) => setSiteForm({ ...siteForm, whatsappDescription: e.target.value })}
+                            placeholder="Opens WhatsApp directly targeting my inbox with a ready-to-send greeting."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                          WhatsApp Pre-Filled Greeting Message
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={siteForm.whatsappDefaultMsg}
+                          onChange={(e) => setSiteForm({ ...siteForm, whatsappDefaultMsg: e.target.value })}
+                          placeholder="Hi Shahriar! I saw your portfolio and would like to discuss a project with you."
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <div className="p-4 rounded-2xl bg-white/[0.02] border border-blue-500/20 space-y-3.5">
+                      <span className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+                        <Mail size={14} />
+                        Email Settings
+                      </span>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                            Email Address
+                          </label>
+                          <input
+                            type="email"
+                            required
+                            value={siteForm.email}
+                            onChange={(e) => setSiteForm({ ...siteForm, email: e.target.value })}
+                            placeholder="shahriarislam275@gmail.com"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                            Default Email Subject
+                          </label>
+                          <input
+                            type="text"
+                            value={siteForm.emailSubject || ''}
+                            onChange={(e) => setSiteForm({ ...siteForm, emailSubject: e.target.value })}
+                            placeholder="Project Inquiry - Portfolio Contact"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                            Email Subtitle
+                          </label>
+                          <input
+                            type="text"
+                            value={siteForm.emailSubtitle || ''}
+                            onChange={(e) => setSiteForm({ ...siteForm, emailSubtitle: e.target.value })}
+                            placeholder="Direct correspondence"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                            Email Description
+                          </label>
+                          <input
+                            type="text"
+                            value={siteForm.emailDescription || ''}
+                            onChange={(e) => setSiteForm({ ...siteForm, emailDescription: e.target.value })}
+                            placeholder="Ideal for detailed project scopes, proposals, and collaboration offers."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Facebook & Instagram */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Facebook */}
+                      <div className="p-4 rounded-2xl bg-white/[0.02] border border-sky-500/20 space-y-3">
+                        <span className="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+                          <Facebook size={14} />
+                          Facebook
+                        </span>
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1">
+                            Profile URL
+                          </label>
+                          <input
+                            type="url"
+                            value={siteForm.facebookUrl}
+                            onChange={(e) => setSiteForm({ ...siteForm, facebookUrl: e.target.value })}
+                            placeholder="https://www.facebook.com/shahriar.islam.ratul.00"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/60"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1">
+                            Handle
+                          </label>
+                          <input
+                            type="text"
+                            value={siteForm.facebookHandle || ''}
+                            onChange={(e) => setSiteForm({ ...siteForm, facebookHandle: e.target.value })}
+                            placeholder="shahriar.islam.ratul.00"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/60 font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Instagram */}
+                      <div className="p-4 rounded-2xl bg-white/[0.02] border border-pink-500/20 space-y-3">
+                        <span className="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-1.5">
+                          <Instagram size={14} />
+                          Instagram
+                        </span>
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1">
+                            Profile URL
+                          </label>
+                          <input
+                            type="url"
+                            value={siteForm.instagramUrl}
+                            onChange={(e) => setSiteForm({ ...siteForm, instagramUrl: e.target.value })}
+                            placeholder="https://www.instagram.com/shahriar_islam_ratul/"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/60"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-400 mb-1">
+                            Handle
+                          </label>
+                          <input
+                            type="text"
+                            value={siteForm.instagramHandle || ''}
+                            onChange={(e) => setSiteForm({ ...siteForm, instagramHandle: e.target.value })}
+                            placeholder="@shahriar_islam_ratul"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/60 font-mono"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -985,7 +1150,7 @@ export function AdminPanel({
                     {/* Pillar 1 */}
                     <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
                       <span className="text-[11px] font-mono uppercase text-emerald-400 font-bold">
-                        Pillar 1 (Vibe Coding &amp; LLMs)
+                        Pillar 1 (Modern AI &amp; LLMs)
                       </span>
                       <input
                         type="text"
@@ -1054,7 +1219,7 @@ export function AdminPanel({
                         type="text"
                         value={siteForm.footerText}
                         onChange={(e) => setSiteForm({ ...siteForm, footerText: e.target.value })}
-                        placeholder="Shahriar Islam Ratul. Built with passion & Vibe coding."
+                        placeholder="Shahriar Islam Ratul. Built with passion & precision."
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
                       />
                     </div>
@@ -1084,6 +1249,380 @@ export function AdminPanel({
                       </>
                     )}
                   </button>
+                </div>
+              </form>
+            )}
+
+            {/* TAB: DEDICATED CONTACT SECTION MANAGER */}
+            {activeTab === 'contact' && (
+              <form onSubmit={handleSaveWebsite} className="space-y-6">
+                {/* Header & Save Action */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-display font-bold text-white tracking-tight flex items-center gap-2">
+                        <MessageCircle size={20} className="text-emerald-400" />
+                        Contact Section Manager
+                      </h3>
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Live Sync
+                      </span>
+                    </div>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      Customize all contact cards, direct WhatsApp links, emails, and social handles.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="submit"
+                      disabled={isSavingSettings}
+                      className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-2 rounded-xl text-xs sm:text-sm transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                    >
+                      {isSavingSettings ? (
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Save size={15} />
+                          <span>Save Contact Settings</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 1. Header & Top Badge */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
+                    <Sparkles size={15} />
+                    <span>1. Section Header &amp; Top Pill Banner</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Top Pill Banner Text
+                      </label>
+                      <input
+                        type="text"
+                        value={siteForm.contactBadgeText || ''}
+                        onChange={(e) => setSiteForm({ ...siteForm, contactBadgeText: e.target.value })}
+                        placeholder="Let's Build Together"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Section Main Heading
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={siteForm.contactHeading}
+                        onChange={(e) => setSiteForm({ ...siteForm, contactHeading: e.target.value })}
+                        placeholder="Get In Touch"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                      Section Subtitle / Description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={siteForm.contactSubtitle}
+                      onChange={(e) => setSiteForm({ ...siteForm, contactSubtitle: e.target.value })}
+                      placeholder="Have an idea, need a rapid prototype, or want to collaborate? Reach out directly through any of the channels below."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 resize-none leading-relaxed"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. WhatsApp Direct Chat */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-emerald-500/20 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
+                      <MessageCircle size={16} />
+                      <span>2. Card: WhatsApp Direct Chat</span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      wa.me click-to-chat
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Display Phone Number (e.g. +8801743904049)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={siteForm.whatsappNumber}
+                        onChange={(e) => setSiteForm({ ...siteForm, whatsappNumber: e.target.value })}
+                        placeholder="+8801743904049"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Direct Digits for wa.me link (numeric digits only)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={siteForm.whatsappRaw}
+                        onChange={(e) => setSiteForm({ ...siteForm, whatsappRaw: e.target.value })}
+                        placeholder="8801743904049"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Card Subtitle / Tagline
+                      </label>
+                      <input
+                        type="text"
+                        value={siteForm.whatsappSubtitle || ''}
+                        onChange={(e) => setSiteForm({ ...siteForm, whatsappSubtitle: e.target.value })}
+                        placeholder="Click to start chat with default message"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Card Short Description
+                      </label>
+                      <input
+                        type="text"
+                        value={siteForm.whatsappDescription || ''}
+                        onChange={(e) => setSiteForm({ ...siteForm, whatsappDescription: e.target.value })}
+                        placeholder="Opens WhatsApp directly targeting my inbox with a ready-to-send greeting."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                      Pre-Filled Greeting Message
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={siteForm.whatsappDefaultMsg}
+                      onChange={(e) => setSiteForm({ ...siteForm, whatsappDefaultMsg: e.target.value })}
+                      placeholder="Hi Shahriar! I saw your portfolio and would like to discuss a project with you."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 resize-none leading-relaxed"
+                    />
+                    <p className="text-[11px] text-neutral-500 mt-1">
+                      When visitors tap &ldquo;Chat on WhatsApp&rdquo;, this greeting will appear directly in their draft message.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. Direct Email */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-blue-500/20 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
+                      <Mail size={16} />
+                      <span>3. Card: Direct Email</span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                      mailto correspondence
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={siteForm.email}
+                        onChange={(e) => setSiteForm({ ...siteForm, email: e.target.value })}
+                        placeholder="shahriarislam275@gmail.com"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Default Email Subject Line
+                      </label>
+                      <input
+                        type="text"
+                        value={siteForm.emailSubject || ''}
+                        onChange={(e) => setSiteForm({ ...siteForm, emailSubject: e.target.value })}
+                        placeholder="Project Inquiry - Portfolio Contact"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Card Subtitle / Tagline
+                      </label>
+                      <input
+                        type="text"
+                        value={siteForm.emailSubtitle || ''}
+                        onChange={(e) => setSiteForm({ ...siteForm, emailSubtitle: e.target.value })}
+                        placeholder="Direct correspondence"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Card Short Description
+                      </label>
+                      <input
+                        type="text"
+                        value={siteForm.emailDescription || ''}
+                        onChange={(e) => setSiteForm({ ...siteForm, emailDescription: e.target.value })}
+                        placeholder="Ideal for detailed project scopes, proposals, and collaboration offers."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Facebook & Instagram Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Facebook */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-sky-500/20 space-y-3.5">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-sky-400">
+                      <Facebook size={16} />
+                      <span>4. Card: Facebook Profile</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Facebook Profile URL
+                      </label>
+                      <input
+                        type="url"
+                        value={siteForm.facebookUrl}
+                        onChange={(e) => setSiteForm({ ...siteForm, facebookUrl: e.target.value })}
+                        placeholder="https://www.facebook.com/shahriar.islam.ratul.00"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Facebook Display Username/Handle
+                      </label>
+                      <input
+                        type="text"
+                        value={siteForm.facebookHandle || ''}
+                        onChange={(e) => setSiteForm({ ...siteForm, facebookHandle: e.target.value })}
+                        placeholder="shahriar.islam.ratul.00"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 font-mono text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Card Description
+                      </label>
+                      <input
+                        type="text"
+                        value={siteForm.facebookDescription || ''}
+                        onChange={(e) => setSiteForm({ ...siteForm, facebookDescription: e.target.value })}
+                        placeholder="Connect with me on Facebook for social updates, networking, and direct messaging."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Instagram */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-pink-500/20 space-y-3.5">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-pink-400">
+                      <Instagram size={16} />
+                      <span>5. Card: Instagram Profile</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Instagram Profile URL
+                      </label>
+                      <input
+                        type="url"
+                        value={siteForm.instagramUrl}
+                        onChange={(e) => setSiteForm({ ...siteForm, instagramUrl: e.target.value })}
+                        placeholder="https://www.instagram.com/shahriar_islam_ratul/"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Instagram Display Username/Handle
+                      </label>
+                      <input
+                        type="text"
+                        value={siteForm.instagramHandle || ''}
+                        onChange={(e) => setSiteForm({ ...siteForm, instagramHandle: e.target.value })}
+                        placeholder="@shahriar_islam_ratul"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 font-mono text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-400 mb-1.5">
+                        Card Description
+                      </label>
+                      <input
+                        type="text"
+                        value={siteForm.instagramDescription || ''}
+                        onChange={(e) => setSiteForm({ ...siteForm, instagramDescription: e.target.value })}
+                        placeholder="Follow along my journey in modern web dev, AI-assisted development, and software prototyping."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Save Action */}
+                <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
+                  <p className="text-xs text-neutral-400">
+                    Saves to Cloud Firestore and immediately refreshes the contact section.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-4 py-2.5 rounded-xl border border-white/10 text-neutral-300 hover:text-white text-xs sm:text-sm transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingSettings}
+                      className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 text-xs sm:text-sm disabled:opacity-50"
+                    >
+                      {isSavingSettings ? (
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Save size={16} />
+                          <span>Save Contact Settings</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </form>
             )}
@@ -1141,7 +1680,7 @@ export function AdminPanel({
 
                 <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4">
                   <h4 className="text-sm font-bold text-white">Quick Administration Links</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button
                       type="button"
                       onClick={() => setActiveTab('projects')}
@@ -1160,15 +1699,31 @@ export function AdminPanel({
 
                     <button
                       type="button"
+                      onClick={() => setActiveTab('contact')}
+                      className="p-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors flex items-center justify-between group"
+                    >
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">
+                          Contact Section
+                        </div>
+                        <div className="text-[11px] text-neutral-400">
+                          Edit WhatsApp, Email, Facebook, Instagram &amp; greetings
+                        </div>
+                      </div>
+                      <MessageCircle size={18} className="text-neutral-500 group-hover:text-emerald-400 transition-colors shrink-0 ml-2" />
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => setActiveTab('website')}
                       className="p-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors flex items-center justify-between group"
                     >
                       <div>
                         <div className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">
-                          Edit Profile &amp; Bio
+                          Profile &amp; Bio
                         </div>
                         <div className="text-[11px] text-neutral-400">
-                          Change photo URL, story text, WhatsApp number, and contacts
+                          Change photo URL, story text, and 3 pillars
                         </div>
                       </div>
                       <Globe size={18} className="text-neutral-500 group-hover:text-emerald-400 transition-colors shrink-0 ml-2" />

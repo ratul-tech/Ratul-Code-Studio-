@@ -1,6 +1,6 @@
 {
   "name": "Ratul Code Studio",
-  "description": "Portfolio of Shahriar Islam Ratul, an independent web developer mastering modern software prototyping, Vibe coding, and LLMs in the creation of web apps.",
+  "description": "Portfolio of Shahriar Islam Ratul, an independent web developer mastering modern software prototyping and LLMs in the creation of web apps.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

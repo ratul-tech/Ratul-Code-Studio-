@@ -126,7 +126,7 @@ export function AnimatedProfilePhoto({
                 Since 2025
               </p>
               <p className="text-xs font-bold text-white leading-tight mt-0.5">
-                Vibe Coding &amp; LLMs
+                Modern AI &amp; LLMs
               </p>
             </div>
           </motion.div>

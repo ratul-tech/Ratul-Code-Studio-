@@ -14,22 +14,46 @@ import {
 
 interface ContactSectionProps {
   email?: string;
+  emailSubject?: string;
+  emailSubtitle?: string;
+  emailDescription?: string;
   phoneNumber?: string;
   whatsappRaw?: string;
   whatsappDefaultMsg?: string;
+  whatsappSubtitle?: string;
+  whatsappDescription?: string;
   facebookUrl?: string;
+  facebookHandle?: string;
+  facebookSubtitle?: string;
+  facebookDescription?: string;
   instagramUrl?: string;
+  instagramHandle?: string;
+  instagramSubtitle?: string;
+  instagramDescription?: string;
+  badgeText?: string;
   heading?: string;
   subtitle?: string;
 }
 
 export function ContactSection({
   email = "shahriarislam275@gmail.com",
+  emailSubject = "Project Inquiry - Portfolio Contact",
+  emailSubtitle = "Direct correspondence",
+  emailDescription = "Ideal for detailed project scopes, proposals, and collaboration offers.",
   phoneNumber = "+8801743904049",
   whatsappRaw = "8801743904049",
   whatsappDefaultMsg = "Hi Shahriar! I saw your portfolio and would like to discuss a project with you.",
+  whatsappSubtitle = "Click to start chat with default message",
+  whatsappDescription = "Opens WhatsApp directly targeting my inbox with a ready-to-send greeting.",
   facebookUrl = "https://www.facebook.com/shahriar.islam.ratul.00",
+  facebookHandle = "shahriar.islam.ratul.00",
+  facebookSubtitle = "Personal profile & network",
+  facebookDescription = "Connect with me on Facebook for social updates, networking, and direct messaging.",
   instagramUrl = "https://www.instagram.com/shahriar_islam_ratul/",
+  instagramHandle = "@shahriar_islam_ratul",
+  instagramSubtitle = "Visuals & prototyping stories",
+  instagramDescription = "Follow along my journey in modern web dev, AI-assisted development, and software prototyping.",
+  badgeText = "Let's Build Together",
   heading = "Get In Touch",
   subtitle = "Have an idea, need a rapid prototype, or want to collaborate? Reach out directly through any of the channels below."
 }: ContactSectionProps) {
@@ -61,8 +85,8 @@ export function ContactSection({
       id: 'whatsapp',
       name: 'WhatsApp',
       handle: PHONE_NUMBER,
-      subtitle: 'Click to start chat with default message',
-      description: 'Opens WhatsApp directly targeting my inbox with a ready-to-send greeting.',
+      subtitle: whatsappSubtitle || 'Click to start chat with default message',
+      description: whatsappDescription || 'Opens WhatsApp directly targeting my inbox with a ready-to-send greeting.',
       icon: MessageCircle,
       actionText: 'Chat on WhatsApp',
       href: WHATSAPP_URL,
@@ -80,11 +104,11 @@ export function ContactSection({
       id: 'email',
       name: 'Email',
       handle: EMAIL,
-      subtitle: 'Direct correspondence',
-      description: 'Ideal for detailed project scopes, proposals, and collaboration offers.',
+      subtitle: emailSubtitle || 'Direct correspondence',
+      description: emailDescription || 'Ideal for detailed project scopes, proposals, and collaboration offers.',
       icon: Mail,
       actionText: 'Send Email',
-      href: `mailto:${EMAIL}?subject=${encodeURIComponent("Project Inquiry - Portfolio Contact")}`,
+      href: `mailto:${EMAIL}?subject=${encodeURIComponent(emailSubject || "Project Inquiry - Portfolio Contact")}`,
       isExternal: false,
       color: 'from-blue-500/20 to-emerald-500/10',
       borderColor: 'border-white/10 hover:border-emerald-500/40',
@@ -98,9 +122,9 @@ export function ContactSection({
     {
       id: 'facebook',
       name: 'Facebook',
-      handle: 'shahriar.islam.ratul.00',
-      subtitle: 'Personal profile & network',
-      description: 'Connect with me on Facebook for social updates, networking, and direct messaging.',
+      handle: facebookHandle || 'shahriar.islam.ratul.00',
+      subtitle: facebookSubtitle || 'Personal profile & network',
+      description: facebookDescription || 'Connect with me on Facebook for social updates, networking, and direct messaging.',
       icon: Facebook,
       actionText: 'Visit Facebook Profile',
       href: FACEBOOK_URL,
@@ -114,9 +138,9 @@ export function ContactSection({
     {
       id: 'instagram',
       name: 'Instagram',
-      handle: '@shahriar_islam_ratul',
-      subtitle: 'Visuals & prototyping stories',
-      description: 'Follow along my journey in modern web dev, vibe coding experiments, and software prototyping.',
+      handle: instagramHandle || '@shahriar_islam_ratul',
+      subtitle: instagramSubtitle || 'Visuals & prototyping stories',
+      description: instagramDescription || 'Follow along my journey in modern web dev, AI-assisted development, and software prototyping.',
       icon: Instagram,
       actionText: 'Follow on Instagram',
       href: INSTAGRAM_URL,
@@ -135,7 +159,7 @@ export function ContactSection({
       <div className="text-center max-w-2xl mx-auto mb-12">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 glass rounded-full text-xs text-neutral-300 mb-4 border border-white/10">
           <Sparkles size={13} className="text-emerald-400" />
-          <span>Let&apos;s Build Together</span>
+          <span>{badgeText || "Let's Build Together"}</span>
         </div>
         <h2 className="text-3xl sm:text-5xl font-display font-bold tracking-tight text-white mb-3">
           {heading}
@@ -241,17 +265,6 @@ export function ContactSection({
             </motion.div>
           );
         })}
-      </div>
-
-      {/* WhatsApp Pre-Filled Message Explainer Pill */}
-      <div className="max-w-xl mx-auto mt-8 text-center">
-        <div className="glass px-4 py-2.5 rounded-2xl border border-emerald-500/20 text-xs text-neutral-400 inline-flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2">
-          <span className="text-emerald-400 font-semibold flex items-center gap-1">
-            <MessageCircle size={14} /> WhatsApp Note:
-          </span>
-          <span>Clicking the WhatsApp card opens a direct chat with:</span>
-          <span className="font-mono text-neutral-300 italic">&ldquo;{DEFAULT_MESSAGE}&rdquo;</span>
-        </div>
       </div>
     </section>
   );

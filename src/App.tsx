@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect, ReactNode, Component, ErrorInfo } from 'react';
+import { useState, useEffect, useRef, ReactNode, Component, ErrorInfo } from 'react';
 import { 
   collection, 
   onSnapshot, 
@@ -272,7 +272,7 @@ function ProjectDescription({ text }: { text: string }) {
 const DEFAULT_PROJECTS: Project[] = [
   {
     id: 'prototype-1',
-    title: 'VibeFlow · AI Applet Studio',
+    title: 'ProtoFlow · AI Applet Studio',
     description: 'An intelligent rapid web app prototyping canvas built to turn natural language prompts into live interactive components. Leverages LLM reasoning, instantaneous hot previews, and modular state management to compress prototyping cycles from days to minutes.',
     imageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=80',
     techStack: 'React, TypeScript, Tailwind CSS, Gemini API',
@@ -291,13 +291,38 @@ const DEFAULT_PROJECTS: Project[] = [
   {
     id: 'prototype-3',
     title: 'PromptCraft · Rapid Prototyper',
-    description: 'A developer utility for crafting, testing, and benchmarking production prompts for LLM-driven applications. Features interactive parameter tweaking, token inspection, and swift prototyping feedback to streamline vibe-coding iterations.',
+    description: 'A developer utility for crafting, testing, and benchmarking production prompts for LLM-driven applications. Features interactive parameter tweaking, token inspection, and swift prototyping feedback to streamline rapid prototyping iterations.',
     imageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
     techStack: 'Next.js, Tailwind CSS, WebSockets, TypeScript',
     demoUrl: 'https://github.com',
     createdAt: null
   }
 ];
+
+const sanitizeSiteSettings = (settings: SiteSettings): SiteSettings => {
+  const sanitizeStr = (s?: string) => {
+    if (!s) return s || '';
+    return s
+      .replace(/vibe[\s-]coding/gi, 'modern web development')
+      .replace(/vibe[\s-]coder/gi, 'web developer')
+      .replace(/vibe\s*coding/gi, 'software prototyping')
+      .replace(/vibeflow/gi, 'ProtoFlow')
+      .replace(/vibe/gi, 'modern');
+  };
+
+  return {
+    ...settings,
+    biography: sanitizeStr(settings.biography),
+    pillar1Title: settings.pillar1Title && settings.pillar1Title.toLowerCase().includes('vibe')
+      ? 'Modern AI & LLMs'
+      : sanitizeStr(settings.pillar1Title),
+    pillar1Desc: sanitizeStr(settings.pillar1Desc),
+    footerText: settings.footerText && settings.footerText.toLowerCase().includes('vibe')
+      ? 'Shahriar Islam Ratul. Built with passion & precision.'
+      : sanitizeStr(settings.footerText),
+    statusBadge: sanitizeStr(settings.statusBadge)
+  };
+};
 
 // --- Main Application ---
 
@@ -331,17 +356,43 @@ function PortfolioApp() {
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
     try {
       const cached = localStorage.getItem('portfolio_site_settings');
-      if (cached) return { ...DEFAULT_SITE_SETTINGS, ...JSON.parse(cached) };
+      if (cached) return sanitizeSiteSettings({ ...DEFAULT_SITE_SETTINGS, ...JSON.parse(cached) });
     } catch (_) {}
     return DEFAULT_SITE_SETTINGS;
   });
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
-  const [adminPanelDefaultTab, setAdminPanelDefaultTab] = useState<'projects' | 'website' | 'overview'>('projects');
+  const [adminPanelDefaultTab, setAdminPanelDefaultTab] = useState<'projects' | 'contact' | 'website' | 'overview'>('projects');
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [cardDeleteConfirmId, setCardDeleteConfirmId] = useState<string | null>(null);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+
+  // 5-click secret trigger for admin access with zero animations and zero hover effects
+  const footerClickCountRef = useRef(0);
+  const footerClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleFooterClick = () => {
+    footerClickCountRef.current += 1;
+    if (footerClickTimeoutRef.current) {
+      clearTimeout(footerClickTimeoutRef.current);
+    }
+
+    if (footerClickCountRef.current >= 5) {
+      footerClickCountRef.current = 0;
+      if (isAdmin) {
+        setAdminPanelDefaultTab('projects');
+        setIsAdminPanelOpen(true);
+      } else {
+        setError(null);
+        setIsLoginModalOpen(true);
+      }
+    } else {
+      footerClickTimeoutRef.current = setTimeout(() => {
+        footerClickCountRef.current = 0;
+      }, 3000);
+    }
+  };
 
   const ADMIN_EMAILS = [
     "shahriarislam275@gmail.com",
@@ -462,7 +513,7 @@ function PortfolioApp() {
       if (docSnap.exists()) {
         const data = docSnap.data() as Partial<SiteSettings>;
         setSiteSettings(prev => {
-          const merged = { ...DEFAULT_SITE_SETTINGS, ...prev, ...data };
+          const merged = sanitizeSiteSettings({ ...DEFAULT_SITE_SETTINGS, ...prev, ...data });
           try {
             localStorage.setItem('portfolio_site_settings', JSON.stringify(merged));
           } catch (_) {}
@@ -1222,11 +1273,23 @@ function PortfolioApp() {
         {/* Dedicated Contact Section */}
         <ContactSection 
           email={siteSettings.email}
+          emailSubject={siteSettings.emailSubject}
+          emailSubtitle={siteSettings.emailSubtitle}
+          emailDescription={siteSettings.emailDescription}
           phoneNumber={siteSettings.whatsappNumber}
           whatsappRaw={siteSettings.whatsappRaw}
           whatsappDefaultMsg={siteSettings.whatsappDefaultMsg}
+          whatsappSubtitle={siteSettings.whatsappSubtitle}
+          whatsappDescription={siteSettings.whatsappDescription}
           facebookUrl={siteSettings.facebookUrl}
+          facebookHandle={siteSettings.facebookHandle}
+          facebookSubtitle={siteSettings.facebookSubtitle}
+          facebookDescription={siteSettings.facebookDescription}
           instagramUrl={siteSettings.instagramUrl}
+          instagramHandle={siteSettings.instagramHandle}
+          instagramSubtitle={siteSettings.instagramSubtitle}
+          instagramDescription={siteSettings.instagramDescription}
+          badgeText={siteSettings.contactBadgeText}
           heading={siteSettings.contactHeading}
           subtitle={siteSettings.contactSubtitle}
         />
@@ -1358,10 +1421,10 @@ function PortfolioApp() {
                   </div>
                   <div>
                     <h3 className="text-xl font-display font-bold">
-                      {isRegisterMode ? 'Set Admin Password' : 'Admin Portal'}
+                      Admin Portal
                     </h3>
                     <p className="text-xs text-neutral-400">
-                      {isRegisterMode ? 'Register authorized admin account' : 'Firebase Authentication'}
+                      Firebase Authentication
                     </p>
                   </div>
                 </div>
@@ -1386,38 +1449,19 @@ function PortfolioApp() {
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <div className="flex items-center justify-between mb-1.5 ml-1 flex-wrap gap-1">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-neutral-400">Email</label>
-                    <div className="flex items-center gap-1.5 text-[11px]">
-                      <button
-                        type="button"
-                        onClick={() => setLoginData(prev => ({ ...prev, email: "shahriarislamratul6@gmail.com" }))}
-                        className="text-emerald-400 hover:text-emerald-300 transition-colors underline decoration-emerald-500/30"
-                      >
-                        shahriarislamratul6
-                      </button>
-                      <span className="text-neutral-600">/</span>
-                      <button
-                        type="button"
-                        onClick={() => setLoginData(prev => ({ ...prev, email: PRIMARY_ADMIN_EMAIL }))}
-                        className="text-neutral-400 hover:text-white transition-colors underline decoration-white/20"
-                      >
-                        shahriarislam275
-                      </button>
-                    </div>
-                  </div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1.5 ml-1">Email</label>
                   <input 
                     required
                     type="email"
                     value={loginData.email}
                     onChange={e => setLoginData({...loginData, email: e.target.value})}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500/50 transition-colors text-sm"
-                    placeholder="shahriarislamratul6@gmail.com"
+                    placeholder="Enter admin email"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1.5 ml-1">
-                    {isRegisterMode ? 'Create Password (6+ chars)' : 'Password'}
+                    Password
                   </label>
                   <input 
                     required
@@ -1439,29 +1483,10 @@ function PortfolioApp() {
                   ) : (
                     <>
                       <LogIn size={18} />
-                      <span>{isRegisterMode ? 'Create & Sign In as Admin' : 'Sign In as Admin'}</span>
+                      <span>Sign In as Admin</span>
                     </>
                   )}
                 </button>
-
-                <div className="pt-2 text-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsRegisterMode(!isRegisterMode);
-                      setError(null);
-                    }}
-                    className="text-xs text-neutral-400 hover:text-emerald-400 transition-colors"
-                  >
-                    {isRegisterMode 
-                      ? 'Already have an admin password? Click here to Sign In' 
-                      : "First time or need to set password? Click to Create Admin Password"}
-                  </button>
-                </div>
-
-                <p className="text-center text-[11px] text-neutral-500 pt-1">
-                  Protected with Firebase Authentication. Authorized for {ADMIN_EMAIL}.
-                </p>
               </form>
             </motion.div>
           </div>
@@ -1543,25 +1568,13 @@ function PortfolioApp() {
             </a>
           </div>
 
-          <motion.p 
+          <p 
             id="admin-access-trigger"
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              if (isAdmin) {
-                setAdminPanelDefaultTab('projects');
-                setIsAdminPanelOpen(true);
-              } else {
-                setError(null);
-                setIsLoginModalOpen(true);
-              }
-            }}
-            className="text-neutral-500 hover:text-emerald-400 text-xs sm:text-sm cursor-pointer select-none transition-all duration-200 inline-flex items-center gap-2 py-1.5 px-3.5 rounded-full hover:bg-white/5 border border-transparent hover:border-emerald-500/20 group"
-            title={isAdmin ? "Admin Active: Click to open Professional Admin Panel" : "Click to open Admin Login"}
+            onClick={handleFooterClick}
+            className="text-neutral-500 text-xs sm:text-sm select-none inline-flex items-center py-1.5 px-3.5 cursor-default"
           >
-            <span>© {new Date().getFullYear()} Shahriar Islam Ratul. Built with passion &amp; Vibe coding.</span>
-            <Lock size={12} className={cn("transition-colors", isAdmin ? "text-emerald-400" : "text-neutral-600 group-hover:text-emerald-400/80")} />
-          </motion.p>
+            <span>© {new Date().getFullYear()} {siteSettings.footerText || "Shahriar Islam Ratul. Built with passion & precision."}</span>
+          </p>
         </div>
       </footer>
 

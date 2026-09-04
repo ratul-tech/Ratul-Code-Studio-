@@ -299,7 +299,7 @@ export function SiteSettingsModal({
                     required
                     value={formData.biography}
                     onChange={(e) => setFormData({ ...formData, biography: e.target.value })}
-                    placeholder="Write your story, expertise, and vibe coding journey..."
+                    placeholder="Write your story, expertise, and software prototyping journey..."
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 resize-none leading-relaxed"
                   />
                 </div>
@@ -309,6 +309,44 @@ export function SiteSettingsModal({
             {/* TAB 2: Contacts & Socials */}
             {activeTab === 'contact' && (
               <div className="space-y-4">
+                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10 space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                    Section Header &amp; Top Badge
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">Top Pill Banner Text</label>
+                      <input
+                        type="text"
+                        value={formData.contactBadgeText || ''}
+                        onChange={(e) => setFormData({ ...formData, contactBadgeText: e.target.value })}
+                        placeholder="Let's Build Together"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">Section Heading</label>
+                      <input
+                        type="text"
+                        value={formData.contactHeading}
+                        onChange={(e) => setFormData({ ...formData, contactHeading: e.target.value })}
+                        placeholder="Get In Touch"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 font-semibold"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-neutral-400 mb-1">Section Subtitle</label>
+                    <textarea
+                      rows={2}
+                      value={formData.contactSubtitle}
+                      onChange={(e) => setFormData({ ...formData, contactSubtitle: e.target.value })}
+                      placeholder="Have an idea, need a rapid prototype, or want to collaborate? Reach out directly..."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 resize-none"
+                    />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
@@ -326,6 +364,21 @@ export function SiteSettingsModal({
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
+                      Email Default Subject
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.emailSubject || ''}
+                      onChange={(e) => setFormData({ ...formData, emailSubject: e.target.value })}
+                      placeholder="Project Inquiry - Portfolio Contact"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
                       WhatsApp Display Number
                     </label>
                     <input
@@ -337,12 +390,10 @@ export function SiteSettingsModal({
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
                     />
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                      WhatsApp Direct Digits (for wa.me link)
+                      WhatsApp Direct Digits (wa.me)
                     </label>
                     <input
                       type="text"
@@ -350,35 +401,9 @@ export function SiteSettingsModal({
                       value={formData.whatsappRaw}
                       onChange={(e) => setFormData({ ...formData, whatsappRaw: e.target.value })}
                       placeholder="8801743904049"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 font-mono text-xs"
                     />
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                      Facebook Profile URL
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.facebookUrl}
-                      onChange={(e) => setFormData({ ...formData, facebookUrl: e.target.value })}
-                      placeholder="https://www.facebook.com/shahriar.islam.ratul.00"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                    Instagram Profile URL
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.instagramUrl}
-                    onChange={(e) => setFormData({ ...formData, instagramUrl: e.target.value })}
-                    placeholder="https://www.instagram.com/shahriar_islam_ratul/"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
-                  />
                 </div>
 
                 <div>
@@ -394,31 +419,31 @@ export function SiteSettingsModal({
                   />
                 </div>
 
-                <div className="pt-2 border-t border-white/10">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3">
-                    Contact Section Headings
-                  </h4>
-                  <div className="grid grid-cols-1 gap-3">
-                    <div>
-                      <label className="block text-xs text-neutral-400 mb-1">Heading</label>
-                      <input
-                        type="text"
-                        value={formData.contactHeading}
-                        onChange={(e) => setFormData({ ...formData, contactHeading: e.target.value })}
-                        placeholder="Get In Touch"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-neutral-400 mb-1">Subtitle</label>
-                      <input
-                        type="text"
-                        value={formData.contactSubtitle}
-                        onChange={(e) => setFormData({ ...formData, contactSubtitle: e.target.value })}
-                        placeholder="Have an idea, need a rapid prototype, or want to collaborate? Reach out directly..."
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
-                      />
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
+                      Facebook Profile URL
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.facebookUrl}
+                      onChange={(e) => setFormData({ ...formData, facebookUrl: e.target.value })}
+                      placeholder="https://www.facebook.com/shahriar.islam.ratul.00"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
+                      Instagram Profile URL
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.instagramUrl}
+                      onChange={(e) => setFormData({ ...formData, instagramUrl: e.target.value })}
+                      placeholder="https://www.instagram.com/shahriar_islam_ratul/"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
+                    />
                   </div>
                 </div>
               </div>
@@ -430,7 +455,7 @@ export function SiteSettingsModal({
                 {/* Pillar 1 */}
                 <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
                   <span className="text-[11px] font-mono uppercase text-emerald-400 font-bold">
-                    Pillar 1 (Vibe Coding)
+                    Pillar 1 (Modern AI &amp; LLMs)
                   </span>
                   <input
                     type="text"
@@ -499,7 +524,7 @@ export function SiteSettingsModal({
                     type="text"
                     value={formData.footerText}
                     onChange={(e) => setFormData({ ...formData, footerText: e.target.value })}
-                    placeholder="Shahriar Islam Ratul. Built with passion & Vibe coding."
+                    placeholder="Shahriar Islam Ratul. Built with passion & precision."
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
                   />
                 </div>
